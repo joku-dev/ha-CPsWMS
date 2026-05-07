@@ -1,9 +1,17 @@
+"""Sync Home Assistant state data into Neo4j.
+
+Dieses Modul liest Home Assistant Entity-States über die REST-API
+und speichert sie in einer Neo4j-Datenbank. Dabei werden Knoten für
+Entity, Room, DeviceClass und Unit angelegt und Beziehungen erstellt.
+"""
+
 import os
 import time
 import requests
 from neo4j import GraphDatabase
 
 
+# Erforderliche Umgebungsvariablen für den Container.
 HA_URL = os.environ["HA_URL"].rstrip("/")
 HA_TOKEN = os.environ["HA_TOKEN"]
 
@@ -11,10 +19,12 @@ NEO4J_URI = os.environ["NEO4J_URI"]
 NEO4J_USER = os.environ["NEO4J_USER"]
 NEO4J_PASSWORD = os.environ["NEO4J_PASSWORD"]
 
+# Intervall in Sekunden, wie oft ein Sync durchgeführt wird.
 SYNC_INTERVAL_SECONDS = int(os.getenv("SYNC_INTERVAL_SECONDS", "300"))
 
 
 def get_ha_states():
+    """Ruft alle Entity-States von Home Assistant ab."""
     response = requests.get(
         f"{HA_URL}/api/states",
         headers={
@@ -28,6 +38,7 @@ def get_ha_states():
 
 
 def room_from_attributes(attributes):
+    """Ermittelt den Raum oder die Area aus den Entity-Attributen."""
     area = attributes.get("area_id")
     room = attributes.get("room")
 
@@ -40,12 +51,14 @@ def room_from_attributes(attributes):
 
 
 def normalize_value(value):
+    """Bereitet Werte für die Speicherung in Neo4j vor."""
     if value is None:
         return None
     return str(value)
 
 
 def create_constraints(driver):
+    """Legt eindeutige Constraints in Neo4j für die wichtigsten Knoten an."""
     with driver.session() as session:
         session.run("""
         CREATE CONSTRAINT entity_id_unique IF NOT EXISTS
@@ -73,6 +86,7 @@ def create_constraints(driver):
 
 
 def sync_entity(tx, entity):
+    """Synchronisiert eine einzelne Home Assistant Entity mit Neo4j."""
     entity_id = entity["entity_id"]
     domain = entity_id.split(".")[0]
     state = normalize_value(entity.get("state"))
@@ -127,6 +141,7 @@ def sync_entity(tx, entity):
 
 
 def run_sync(driver):
+    """Führt den kompletten Synchronisationslauf aus."""
     states = get_ha_states()
 
     with driver.session() as session:
@@ -137,6 +152,7 @@ def run_sync(driver):
 
 
 def wait_for_neo4j(driver, retries=30, delay=5):
+    """Wartet, bis die Neo4j-Datenbank erreichbar ist."""
     for attempt in range(1, retries + 1):
         try:
             with driver.session() as session:
@@ -151,6 +167,7 @@ def wait_for_neo4j(driver, retries=30, delay=5):
 
 
 def main():
+    """Startet die Sync-Anwendung."""
     driver = GraphDatabase.driver(
         NEO4J_URI,
         auth=(NEO4J_USER, NEO4J_PASSWORD),
