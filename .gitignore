@@ -1,0 +1,19 @@
+# Ignore Neo4j runtime data and logs
+neo4j/data/
+eo4j/logs/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pytest_cache/
+.pytest_cache/
+
+# Environment files
+.env
+.env.*
+
+# Local editor files
+.vscode/
+.DS_Store
