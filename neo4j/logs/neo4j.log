@@ -158,3 +158,41 @@
 2026-05-08 13:03:40.430+0000 INFO  name: system
 2026-05-08 13:03:40.435+0000 INFO  creationDate: 2026-05-07T16:41:56.302Z
 2026-05-08 13:03:40.435+0000 INFO  Started.
+2026-05-08 14:26:13.988+0000 INFO  Neo4j Server shutdown initiated by request
+2026-05-08 14:26:13.995+0000 INFO  Stopping...
+2026-05-08 14:27:01.417+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-05-08 14:27:01.445+0000 INFO  Starting...
+2026-05-08 14:27:03.188+0000 INFO  This instance is ServerId{0c3ed18d} (0c3ed18d-978b-4aa4-9032-69719de4e36a)
+2026-05-08 14:27:06.842+0000 INFO  ======== Neo4j 2026.04.0 ========
+2026-05-08 14:27:08.537+0000 INFO  X-Forward header processing enabled with security controls
+2026-05-08 14:27:08.539+0000 WARN  SECURITY WARNING: X-Forward headers accepted from any source - configure allow_proxies
+2026-05-08 14:27:08.540+0000 WARN  SECURITY WARNING: X-Forward headers accept any hostname - configure allow_hosts
+2026-05-08 14:27:10.989+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-05-08 14:27:11.694+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-05-08 14:27:11.992+0000 INFO  This server has built-in support for online monitoring through Fleet Manager. Visit https://console.neo4j.io to get started!
+2026-05-08 14:27:16.158+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-05-08 14:27:16.162+0000 INFO  Remote interface available at http://localhost:7474/
+2026-05-08 14:27:16.172+0000 INFO  id: 77FCDAEA6E509D8A01B394F46781BF2A50F4C16C1BFC426A16DC99F6ABDFA0C7
+2026-05-08 14:27:16.174+0000 INFO  name: system
+2026-05-08 14:27:16.175+0000 INFO  creationDate: 2026-05-07T16:41:56.302Z
+2026-05-08 14:27:16.176+0000 INFO  Started.
+2026-05-08 14:31:07.863+0000 INFO  Neo4j Server shutdown initiated by request
+2026-05-08 14:31:07.869+0000 INFO  Stopping...
+2026-05-08 14:31:37.875+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-05-08 14:31:37.895+0000 INFO  Starting...
+2026-05-08 14:31:39.713+0000 INFO  This instance is ServerId{0c3ed18d} (0c3ed18d-978b-4aa4-9032-69719de4e36a)
+2026-05-08 14:31:41.427+0000 INFO  ======== Neo4j 2026.04.0 ========
+2026-05-08 14:31:42.071+0000 INFO  X-Forward header processing enabled with security controls
+2026-05-08 14:31:42.072+0000 WARN  SECURITY WARNING: X-Forward headers accepted from any source - configure allow_proxies
+2026-05-08 14:31:42.074+0000 WARN  SECURITY WARNING: X-Forward headers accept any hostname - configure allow_hosts
+2026-05-08 14:31:44.061+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-05-08 14:31:44.812+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-05-08 14:31:45.065+0000 INFO  This server has built-in support for online monitoring through Fleet Manager. Visit https://console.neo4j.io to get started!
+2026-05-08 14:31:47.735+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-05-08 14:31:47.737+0000 INFO  Remote interface available at http://localhost:7474/
+2026-05-08 14:31:47.742+0000 INFO  id: 77FCDAEA6E509D8A01B394F46781BF2A50F4C16C1BFC426A16DC99F6ABDFA0C7
+2026-05-08 14:31:47.744+0000 INFO  name: system
+2026-05-08 14:31:47.744+0000 INFO  creationDate: 2026-05-07T16:41:56.302Z
+2026-05-08 14:31:47.745+0000 INFO  Started.
+2026-05-08 14:56:06.938+0000 INFO  Neo4j Server shutdown initiated by request
+2026-05-08 14:56:06.952+0000 INFO  Stopping...
