@@ -2,18 +2,29 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "enrichments": {
+    "anomalies": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "entity_id": { "type": "string" },
-          "semantic_role": { "type": "string" },
-          "semantic_category": { "type": "string" },
-          "criticality": {
+          "anomaly_type": {
             "type": "string",
-            "enum": ["low", "medium", "high", "unknown"]
+            "enum": [
+              "unavailable_entity",
+              "frequent_state_change",
+              "stale_sensor",
+              "unexpected_state",
+              "automation_loop",
+              "network_issue",
+              "battery_issue",
+              "unknown"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical", "unknown"]
           },
           "confidence": {
             "type": "number",
@@ -24,16 +35,13 @@
         },
         "required": [
           "entity_id",
-          "semantic_role",
-          "semantic_category",
-          "criticality",
+          "anomaly_type",
+          "severity",
           "confidence",
           "reason"
         ]
       }
     }
   },
-  "required": ["enrichments"]
+  "required": ["anomalies"]
 }
-
-

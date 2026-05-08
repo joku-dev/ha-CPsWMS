@@ -2,24 +2,25 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "relationships": {
+    "automation_intents": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "source_entity_id": { "type": "string" },
-          "target_entity_id": { "type": "string" },
-          "relationship_type": {
+          "automation_id": { "type": "string" },
+          "intent": {
             "type": "string",
             "enum": [
-              "depends_on",
-              "controls",
-              "triggers",
-              "monitors",
-              "reports_to",
-              "located_near",
-              "functionally_related_to",
+              "comfort",
+              "security",
+              "energy_saving",
+              "notification",
+              "maintenance",
+              "presence_based_control",
+              "climate_control",
+              "lighting_control",
+              "safety",
               "unknown"
             ]
           },
@@ -31,16 +32,13 @@
           "reason": { "type": "string" }
         },
         "required": [
-          "source_entity_id",
-          "target_entity_id",
-          "relationship_type",
+          "automation_id",
+          "intent",
           "confidence",
           "reason"
         ]
       }
     }
   },
-  "required": ["relationships"]
+  "required": ["automation_intents"]
 }
-
-
