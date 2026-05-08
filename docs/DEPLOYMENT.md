@@ -1,88 +1,94 @@
 # Deployment-Checkliste
 
-Diese Checkliste hilft beim sicheren Aufbau und Betrieb des Home Assistant → Neo4j Sync-Projekts.
+## 1. Vorbereitung
 
-## 1. Lokale Vorbereitung
-
-- [ ] Klone das Repository in dein Zielverzeichnis.
-- [ ] Stelle sicher, dass Docker und Docker Compose installiert sind.
-- [ ] Lege eine Datei `.env` im Projektstamm an, um sensible Werte nicht ins Repo zu schreiben.
-
-Kopiere dazu `.env.example` und fülle die Werte aus:
+- Repository klonen
+- Docker + Docker Compose installieren
+- `.env` aus `.env.example` erzeugen
 
 ```bash
 cp .env.example .env
 ```
 
-Beispiel `.env`:
+## 2. Pflichtwerte setzen
 
-```ini
-HA_URL=http://homeassistant.local:8123
-HA_TOKEN=DEIN_HOME_ASSISTANT_TOKEN
-NEO4J_URI=bolt://neo4j:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=ChangeMe123!
-NEO4J_AUTH=neo4j/ChangeMe123!
-SYNC_INTERVAL_SECONDS=300
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-5.5
-BATCH_SIZE=20
-```
+- `HA_URL`
+- `HA_TOKEN`
+- `NEO4J_PASSWORD`
 
-## 2. Konfiguration prüfen
+Fuer Semantic Enrichment zusaetzlich:
 
-- [ ] Öffne `docker-compose.yml` und prüfe, ob die Umgebungsvariablen korrekt referenziert werden.
-- [ ] Stelle sicher, dass `neo4j/data` und `neo4j/logs` in `.gitignore` stehen.
-- [ ] Verifiziere, dass `ha-sync/requirements.txt` die benötigten Pakete enthält.
+- `OPENAI_API_KEY`
 
-## 3. Erststart
+Optionale Enrichment-Tuning-Parameter:
 
-Führe im Projektstamm aus:
+- `OPENAI_MODEL` (Default: `gpt-5.5`)
+- `BATCH_SIZE` (Default: `20`)
+- `SLEEP_SECONDS` (Default: `300`)
+- `MIN_CONFIDENCE` (Default: `0.5`)
+
+## 3. Start
 
 ```bash
 docker compose up -d --build
 ```
 
-- [ ] Prüfe, ob der `neo4j`-Container startet.
-- [ ] Prüfe, ob der `ha-sync`-Container startet.
-- [ ] Prüfe, ob der `semantic-enrichment`-Container startet (optional, nur wenn OPENAI_API_KEY gesetzt ist).
-
-## 4. Betrieb & Kontrolle
-
-- [ ] Überwache die Logs des Sync-Containers:
+## 4. Health-Checks
 
 ```bash
+docker compose ps
+docker compose logs -f neo4j
 docker compose logs -f ha-sync
-```
-
-- [ ] Überwache die Logs des Enrichment-Containers (optional):
-
-```bash
 docker compose logs -f semantic-enrichment
 ```
 
-- [ ] Öffne den Neo4j Browser unter `http://localhost:7474`.
-- [ ] Prüfe, ob die Datenbank erreichbar ist und die Knoten geladen werden.
+Neo4j Browser: `http://localhost:7474`
 
-## 5. Fehlerbehebung
+## 5. Aktive Enricher verifizieren
 
-- Bei Verbindungsproblemen mit Home Assistant:
-  - `HA_URL` prüfen
-  - `HA_TOKEN` prüfen
-  - Home Assistant API erreichbar?
+Der Runtime-Orchestrator `semantic-enrichment/semantic_enrich.py` fuehrt folgende 9 Enricher aus:
 
-- Bei Neo4j-Problemen:
-  - `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` prüfen
-  - Neo4j-Logs unter `neo4j/logs` prüfen
+1. `semantic_roles`
+2. `automation_intent`
+3. `fault_analysis`
+4. `anomaly_detection`
+5. `room_inference`
+6. `dependency_reasoning`
+7. `failure_impact`
+8. `semantic_descriptions`
+9. `recommended_actions`
 
-- Bei Semantic Enrichment Problemen:
-  - `OPENAI_API_KEY` prüfen
-  - OpenAI Rate-Limits prüfen
-  - Logs des `semantic-enrichment` Containers prüfen
+Im Container-Log sollten pro Zyklus Eintraege wie `Running enricher: <name>` fuer diese Enricher erscheinen.
 
-## 6. Sicherer Betrieb
+## 6. Fachlicher Check in Neo4j
 
-- [ ] Speichere keine echten Zugangsdaten im Git-Repository.
-- [ ] Nutze `.env` für Secrets und achte darauf, dass diese Datei ignoriert wird.
-- [ ] Dokumentiere Änderungen an `docker-compose.yml`, `ha-sync/sync.py` und `semantic-enrichment/semantic_enrich.py` im Repository.
-- [ ] Behandle `OPENAI_API_KEY` als vertraulich und speichere ihn nicht im Repository.
+```cypher
+MATCH (e:Entity) RETURN count(e) AS entities;
+```
+
+```cypher
+MATCH (:Entity)-[r:HAS_SEMANTIC_ROLE]->(:SemanticRole)
+RETURN count(r) AS semantic_role_links;
+```
+
+```cypher
+MATCH (:Entity)-[r:HAS_FAILURE_IMPACT]->(:FailureImpactLevel)
+RETURN count(r) AS failure_impact_links;
+```
+
+```cypher
+MATCH (:Entity)-[r:HAS_SEMANTIC_DESCRIPTION]->(:SemanticDescription)
+RETURN count(r) AS semantic_description_links;
+```
+
+```cypher
+MATCH (:Entity)-[r:HAS_RECOMMENDED_ACTION]->(:RecommendedActionType)
+RETURN count(r) AS recommended_action_links;
+```
+
+## 7. Betriebshinweise
+
+- Secrets nie committen
+- `.env` lokal halten
+- `neo4j/data` und `neo4j/logs` nicht versionieren
+- Prompt/Schema-Aenderungen mit Container-Neustart ausrollen

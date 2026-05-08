@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "failure_impacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity_id": { "type": "string" },
+          "affected_capability": { "type": "string" },
+          "operational_consequence": { "type": "string" },
+          "impact_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical", "unknown"]
+          },
+          "impact_summary": { "type": "string" },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": { "type": "string" }
+        },
+        "required": [
+          "entity_id",
+          "affected_capability",
+          "operational_consequence",
+          "impact_level",
+          "impact_summary",
+          "confidence",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": ["failure_impacts"]
+}
