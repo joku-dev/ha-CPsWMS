@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "enrichments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity_id": {
+            "type": "string"
+          },
+          "semantic_role": {
+            "type": "string"
+          },
+          "semantic_category": {
+            "type": "string"
+          },
+          "criticality": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "unknown"]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity_id",
+          "semantic_role",
+          "semantic_category",
+          "criticality",
+          "confidence",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": ["enrichments"]
+}
