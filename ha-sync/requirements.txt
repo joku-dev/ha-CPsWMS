@@ -1,2 +1,5 @@
 requests
 neo4j
+websocket-client
+pyyaml
+
