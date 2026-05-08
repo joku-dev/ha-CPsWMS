@@ -5,9 +5,6 @@ und speichert sie in einer Neo4j-Datenbank. Dabei werden Knoten für
 Entity, Room, DeviceClass und Unit angelegt und Beziehungen erstellt.
 """
 
-
-
-
 import os
 import re
 import json
@@ -26,10 +23,11 @@ NEO4J_USER = os.environ["NEO4J_USER"]
 NEO4J_PASSWORD = os.environ["NEO4J_PASSWORD"]
 
 SYNC_INTERVAL_SECONDS = int(os.getenv("SYNC_INTERVAL_SECONDS", "300"))
-
-# Optional: automations.yaml in den Container mounten
 AUTOMATIONS_YAML_PATH = os.getenv("AUTOMATIONS_YAML_PATH", "/config/automations.yaml")
 
+ENABLE_EVENT_HISTORY = os.getenv("ENABLE_EVENT_HISTORY", "true").lower() == "true"
+ENABLE_MQTT_MODEL = os.getenv("ENABLE_MQTT_MODEL", "true").lower() == "true"
+ENABLE_ZIGBEE_MODEL = os.getenv("ENABLE_ZIGBEE_MODEL", "true").lower() == "true"
 
 ENTITY_ID_PATTERN = re.compile(r"\b[a-zA-Z_]+\.[a-zA-Z0-9_]+\b")
 
@@ -39,6 +37,14 @@ def ha_headers():
         "Authorization": f"Bearer {HA_TOKEN}",
         "Content-Type": "application/json",
     }
+
+
+def normalize_value(value):
+    if value is None:
+        return None
+    if isinstance(value, (dict, list, tuple, set)):
+        return json.dumps(value, ensure_ascii=False)
+    return str(value)
 
 
 def get_ha_states():
@@ -51,14 +57,35 @@ def get_ha_states():
     return response.json()
 
 
+def get_ha_logbook():
+    try:
+        response = requests.get(
+            f"{HA_URL}/api/logbook",
+            headers=ha_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as exc:
+        print(f"Could not read logbook: {exc}")
+        return []
+
+
+def get_ha_events():
+    try:
+        response = requests.get(
+            f"{HA_URL}/api/events",
+            headers=ha_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as exc:
+        print(f"Could not read event types: {exc}")
+        return []
+
+
 def ha_ws_command(command_type):
-    """
-    Nutzt die Home-Assistant-WebSocket-API für Registries:
-    - config/entity_registry/list
-    - config/device_registry/list
-    - config/area_registry/list
-    - config/floor_registry/list
-    """
     ws_url = HA_URL.replace("http://", "ws://").replace("https://", "wss://")
     ws_url = f"{ws_url}/api/websocket"
 
@@ -70,7 +97,7 @@ def ha_ws_command(command_type):
 
     ws.send(json.dumps({
         "type": "auth",
-        "access_token": HA_TOKEN
+        "access_token": HA_TOKEN,
     }))
 
     auth_ok = json.loads(ws.recv())
@@ -79,7 +106,7 @@ def ha_ws_command(command_type):
 
     ws.send(json.dumps({
         "id": 1,
-        "type": command_type
+        "type": command_type,
     }))
 
     result = json.loads(ws.recv())
@@ -91,58 +118,39 @@ def ha_ws_command(command_type):
     return result.get("result", [])
 
 
-def get_entity_registry():
+def safe_ws(command_type, label):
     try:
-        return ha_ws_command("config/entity_registry/list")
+        return ha_ws_command(command_type)
     except Exception as exc:
-        print(f"Could not read entity registry: {exc}")
+        print(f"Could not read {label}: {exc}")
         return []
+
+
+def get_entity_registry():
+    return safe_ws("config/entity_registry/list", "entity registry")
 
 
 def get_device_registry():
-    try:
-        return ha_ws_command("config/device_registry/list")
-    except Exception as exc:
-        print(f"Could not read device registry: {exc}")
-        return []
+    return safe_ws("config/device_registry/list", "device registry")
 
 
 def get_area_registry():
-    try:
-        return ha_ws_command("config/area_registry/list")
-    except Exception as exc:
-        print(f"Could not read area registry: {exc}")
-        return []
+    return safe_ws("config/area_registry/list", "area registry")
 
 
 def get_floor_registry():
-    try:
-        return ha_ws_command("config/floor_registry/list")
-    except Exception as exc:
-        print(f"Could not read floor registry: {exc}")
-        return []
+    return safe_ws("config/floor_registry/list", "floor registry")
 
 
-def normalize_value(value):
-    if value is None:
-        return None
-    if isinstance(value, (dict, list)):
-        return json.dumps(value, ensure_ascii=False)
-    return str(value)
+def get_label_registry():
+    return safe_ws("config/label_registry/list", "label registry")
+
+
+def get_config_entry_registry():
+    return safe_ws("config/config_entries/list", "config entries")
 
 
 def extract_entity_ids_from_object(obj):
-    """
-    Extrahiert Entity-IDs aus beliebigen YAML-Strukturen.
-    Funktioniert für:
-    entity_id: light.kitchen
-    entity_id:
-      - light.kitchen
-      - switch.fan
-    service_data/entity_id
-    target/entity_id
-    Templates mit enthaltenen Entity-IDs
-    """
     found = set()
 
     if obj is None:
@@ -158,19 +166,18 @@ def extract_entity_ids_from_object(obj):
         return found
 
     if isinstance(obj, dict):
-        for key, value in obj.items():
+        for value in obj.values():
             found.update(extract_entity_ids_from_object(value))
 
     return found
 
 
-def load_automations_yaml():
-    if not os.path.exists(AUTOMATIONS_YAML_PATH):
-        print(f"No automations.yaml found at {AUTOMATIONS_YAML_PATH}")
+def load_yaml_file(path):
+    if not os.path.exists(path):
         return []
 
     try:
-        with open(AUTOMATIONS_YAML_PATH, "r", encoding="utf-8") as file:
+        with open(path, "r", encoding="utf-8") as file:
             data = yaml.safe_load(file) or []
 
         if isinstance(data, dict):
@@ -179,57 +186,34 @@ def load_automations_yaml():
         return data
 
     except Exception as exc:
-        print(f"Could not parse automations.yaml: {exc}")
+        print(f"Could not parse YAML file {path}: {exc}")
         return []
 
 
 def create_constraints(driver):
-    with driver.session() as session:
-        constraints = [
-            """
-            CREATE CONSTRAINT entity_id_unique IF NOT EXISTS
-            FOR (e:Entity)
-            REQUIRE e.entity_id IS UNIQUE
-            """,
-            """
-            CREATE CONSTRAINT device_id_unique IF NOT EXISTS
-            FOR (d:Device)
-            REQUIRE d.device_id IS UNIQUE
-            """,
-            """
-            CREATE CONSTRAINT area_id_unique IF NOT EXISTS
-            FOR (a:Area)
-            REQUIRE a.area_id IS UNIQUE
-            """,
-            """
-            CREATE CONSTRAINT floor_id_unique IF NOT EXISTS
-            FOR (f:Floor)
-            REQUIRE f.floor_id IS UNIQUE
-            """,
-            """
-            CREATE CONSTRAINT device_class_unique IF NOT EXISTS
-            FOR (d:DeviceClass)
-            REQUIRE d.name IS UNIQUE
-            """,
-            """
-            CREATE CONSTRAINT unit_name_unique IF NOT EXISTS
-            FOR (u:Unit)
-            REQUIRE u.name IS UNIQUE
-            """,
-            """
-            CREATE CONSTRAINT automation_id_unique IF NOT EXISTS
-            FOR (a:Automation)
-            REQUIRE a.automation_id IS UNIQUE
-            """,
-            """
-            CREATE CONSTRAINT domain_name_unique IF NOT EXISTS
-            FOR (d:Domain)
-            REQUIRE d.name IS UNIQUE
-            """
-        ]
+    constraints = [
+        ("Entity", "entity_id"),
+        ("Device", "device_id"),
+        ("Area", "area_id"),
+        ("Floor", "floor_id"),
+        ("Automation", "automation_id"),
+        ("DeviceClass", "name"),
+        ("Domain", "name"),
+        ("Unit", "name"),
+        ("Integration", "domain"),
+        ("EventType", "name"),
+        ("Problem", "problem_id"),
+        ("MqttTopic", "topic"),
+        ("ZigbeeNode", "ieee"),
+    ]
 
-        for constraint in constraints:
-            session.run(constraint)
+    with driver.session() as session:
+        for label, prop in constraints:
+            session.run(f"""
+            CREATE CONSTRAINT {label.lower()}_{prop}_unique IF NOT EXISTS
+            FOR (n:{label})
+            REQUIRE n.{prop} IS UNIQUE
+            """)
 
 
 def sync_floors(tx, floors):
@@ -238,17 +222,11 @@ def sync_floors(tx, floors):
         if not floor_id:
             continue
 
-        tx.run(
-            """
-            MERGE (f:Floor {floor_id: $floor_id})
-            SET
-                f.name = $name,
-                f.icon = $icon
-            """,
-            floor_id=floor_id,
-            name=floor.get("name"),
-            icon=floor.get("icon"),
-        )
+        tx.run("""
+        MERGE (f:Floor {floor_id: $floor_id})
+        SET f.name = $name,
+            f.icon = $icon
+        """, floor_id=floor_id, name=floor.get("name"), icon=floor.get("icon"))
 
 
 def sync_areas(tx, areas):
@@ -257,23 +235,40 @@ def sync_areas(tx, areas):
         if not area_id:
             continue
 
-        tx.run(
-            """
-            MERGE (a:Area {area_id: $area_id})
-            SET
-                a.name = $name,
-                a.icon = $icon
+        tx.run("""
+        MERGE (a:Area {area_id: $area_id})
+        SET a.name = $name,
+            a.icon = $icon
 
-            FOREACH (_ IN CASE WHEN $floor_id IS NOT NULL THEN [1] ELSE [] END |
-                MERGE (f:Floor {floor_id: $floor_id})
-                MERGE (a)-[:LOCATED_ON]->(f)
-            )
-            """,
-            area_id=area_id,
-            name=area.get("name"),
-            icon=area.get("icon"),
-            floor_id=area.get("floor_id"),
+        FOREACH (_ IN CASE WHEN $floor_id IS NOT NULL THEN [1] ELSE [] END |
+            MERGE (f:Floor {floor_id: $floor_id})
+            MERGE (a)-[:LOCATED_ON]->(f)
         )
+        """,
+        area_id=area_id,
+        name=area.get("name"),
+        icon=area.get("icon"),
+        floor_id=area.get("floor_id"))
+
+
+def sync_integrations(tx, config_entries):
+    for entry in config_entries:
+        domain = entry.get("domain")
+        if not domain:
+            continue
+
+        tx.run("""
+        MERGE (i:Integration {domain: $domain})
+        SET i.title = $title,
+            i.source = $source,
+            i.disabled_by = $disabled_by,
+            i.state = $state
+        """,
+        domain=domain,
+        title=entry.get("title"),
+        source=entry.get("source"),
+        disabled_by=entry.get("disabled_by"),
+        state=entry.get("state"))
 
 
 def sync_devices(tx, devices):
@@ -289,38 +284,38 @@ def sync_devices(tx, devices):
             or device_id
         )
 
-        identifiers = normalize_value(device.get("identifiers"))
-        connections = normalize_value(device.get("connections"))
+        tx.run("""
+        MERGE (d:Device {device_id: $device_id})
+        SET d.name = $name,
+            d.manufacturer = $manufacturer,
+            d.model = $model,
+            d.sw_version = $sw_version,
+            d.hw_version = $hw_version,
+            d.configuration_url = $configuration_url,
+            d.identifiers = $identifiers,
+            d.connections = $connections
 
-        tx.run(
-            """
-            MERGE (d:Device {device_id: $device_id})
-            SET
-                d.name = $name,
-                d.manufacturer = $manufacturer,
-                d.model = $model,
-                d.sw_version = $sw_version,
-                d.hw_version = $hw_version,
-                d.configuration_url = $configuration_url,
-                d.identifiers = $identifiers,
-                d.connections = $connections
-
-            FOREACH (_ IN CASE WHEN $area_id IS NOT NULL THEN [1] ELSE [] END |
-                MERGE (a:Area {area_id: $area_id})
-                MERGE (d)-[:LOCATED_IN]->(a)
-            )
-            """,
-            device_id=device_id,
-            name=name,
-            manufacturer=device.get("manufacturer"),
-            model=device.get("model"),
-            sw_version=device.get("sw_version"),
-            hw_version=device.get("hw_version"),
-            configuration_url=device.get("configuration_url"),
-            identifiers=identifiers,
-            connections=connections,
-            area_id=device.get("area_id"),
+        FOREACH (_ IN CASE WHEN $area_id IS NOT NULL THEN [1] ELSE [] END |
+            MERGE (a:Area {area_id: $area_id})
+            MERGE (d)-[:LOCATED_IN]->(a)
         )
+
+        FOREACH (_ IN CASE WHEN $integration IS NOT NULL THEN [1] ELSE [] END |
+            MERGE (i:Integration {domain: $integration})
+            MERGE (d)-[:PROVIDED_BY]->(i)
+        )
+        """,
+        device_id=device_id,
+        name=name,
+        manufacturer=device.get("manufacturer"),
+        model=device.get("model"),
+        sw_version=device.get("sw_version"),
+        hw_version=device.get("hw_version"),
+        configuration_url=device.get("configuration_url"),
+        identifiers=normalize_value(device.get("identifiers")),
+        connections=normalize_value(device.get("connections")),
+        area_id=device.get("area_id"),
+        integration=device.get("via_device_id"))
 
 
 def sync_entity(tx, entity, registry_by_entity_id):
@@ -340,75 +335,78 @@ def sync_entity(tx, entity, registry_by_entity_id):
 
     device_id = registry.get("device_id")
     area_id = registry.get("area_id")
+    platform = registry.get("platform")
+    unique_id = registry.get("unique_id")
 
     device_class = attributes.get("device_class") or registry.get("device_class")
     unit = attributes.get("unit_of_measurement")
     icon = attributes.get("icon") or registry.get("icon")
     entity_category = attributes.get("entity_category") or registry.get("entity_category")
-    platform = registry.get("platform")
-    unique_id = registry.get("unique_id")
 
     is_problem = state in ["unavailable", "unknown", "none", None]
 
-    tx.run(
-        """
-        MERGE (e:Entity {entity_id: $entity_id})
-        SET
-            e.domain = $domain,
-            e.state = $state,
-            e.friendly_name = $friendly_name,
-            e.icon = $icon,
-            e.entity_category = $entity_category,
-            e.platform = $platform,
-            e.unique_id = $unique_id,
-            e.is_problem = $is_problem,
-            e.last_changed = datetime($last_changed),
-            e.last_updated = datetime($last_updated)
+    tx.run("""
+    MERGE (e:Entity {entity_id: $entity_id})
+    SET e.domain = $domain,
+        e.state = $state,
+        e.friendly_name = $friendly_name,
+        e.icon = $icon,
+        e.entity_category = $entity_category,
+        e.platform = $platform,
+        e.unique_id = $unique_id,
+        e.is_problem = $is_problem,
+        e.last_changed = datetime($last_changed),
+        e.last_updated = datetime($last_updated)
 
-        MERGE (dom:Domain {name: $domain})
-        MERGE (e)-[:BELONGS_TO_DOMAIN]->(dom)
+    MERGE (dom:Domain {name: $domain})
+    MERGE (e)-[:BELONGS_TO_DOMAIN]->(dom)
 
-        FOREACH (_ IN CASE WHEN $area_id IS NOT NULL THEN [1] ELSE [] END |
-            MERGE (a:Area {area_id: $area_id})
-            MERGE (e)-[:LOCATED_IN]->(a)
-        )
-
-        FOREACH (_ IN CASE WHEN $device_id IS NOT NULL THEN [1] ELSE [] END |
-            MERGE (d:Device {device_id: $device_id})
-            MERGE (e)-[:REPRESENTS]->(d)
-        )
-
-        FOREACH (_ IN CASE WHEN $device_class IS NOT NULL THEN [1] ELSE [] END |
-            MERGE (dc:DeviceClass {name: $device_class})
-            MERGE (e)-[:HAS_DEVICE_CLASS]->(dc)
-        )
-
-        FOREACH (_ IN CASE WHEN $unit IS NOT NULL THEN [1] ELSE [] END |
-            MERGE (u:Unit {name: $unit})
-            MERGE (e)-[:MEASURED_IN]->(u)
-        )
-        """,
-        entity_id=entity_id,
-        domain=domain,
-        state=state,
-        friendly_name=friendly_name,
-        icon=icon,
-        entity_category=entity_category,
-        platform=platform,
-        unique_id=unique_id,
-        area_id=area_id,
-        device_id=device_id,
-        device_class=device_class,
-        unit=unit,
-        is_problem=is_problem,
-        last_changed=entity["last_changed"],
-        last_updated=entity["last_updated"],
+    FOREACH (_ IN CASE WHEN $area_id IS NOT NULL THEN [1] ELSE [] END |
+        MERGE (a:Area {area_id: $area_id})
+        MERGE (e)-[:LOCATED_IN]->(a)
     )
+
+    FOREACH (_ IN CASE WHEN $device_id IS NOT NULL THEN [1] ELSE [] END |
+        MERGE (d:Device {device_id: $device_id})
+        MERGE (e)-[:REPRESENTS]->(d)
+    )
+
+    FOREACH (_ IN CASE WHEN $device_class IS NOT NULL THEN [1] ELSE [] END |
+        MERGE (dc:DeviceClass {name: $device_class})
+        MERGE (e)-[:HAS_DEVICE_CLASS]->(dc)
+    )
+
+    FOREACH (_ IN CASE WHEN $unit IS NOT NULL THEN [1] ELSE [] END |
+        MERGE (u:Unit {name: $unit})
+        MERGE (e)-[:MEASURED_IN]->(u)
+    )
+
+    FOREACH (_ IN CASE WHEN $platform IS NOT NULL THEN [1] ELSE [] END |
+        MERGE (i:Integration {domain: $platform})
+        MERGE (e)-[:PROVIDED_BY]->(i)
+    )
+    """,
+    entity_id=entity_id,
+    domain=domain,
+    state=state,
+    friendly_name=friendly_name,
+    icon=icon,
+    entity_category=entity_category,
+    platform=platform,
+    unique_id=unique_id,
+    area_id=area_id,
+    device_id=device_id,
+    device_class=device_class,
+    unit=unit,
+    is_problem=is_problem,
+    last_changed=entity["last_changed"],
+    last_updated=entity["last_updated"])
 
 
 def sync_automations_from_states(tx, states):
     for entity in states:
         entity_id = entity["entity_id"]
+
         if not entity_id.startswith("automation."):
             continue
 
@@ -416,26 +414,23 @@ def sync_automations_from_states(tx, states):
         name = attributes.get("friendly_name", entity_id)
         last_triggered = attributes.get("last_triggered")
 
-        tx.run(
-            """
-            MERGE (a:Automation {automation_id: $automation_id})
-            SET
-                a.name = $name,
-                a.entity_id = $automation_id,
-                a.state = $state,
-                a.last_triggered = CASE
-                    WHEN $last_triggered IS NULL THEN NULL
-                    ELSE datetime($last_triggered)
-                END
+        tx.run("""
+        MERGE (a:Automation {automation_id: $automation_id})
+        SET a.name = $name,
+            a.entity_id = $automation_id,
+            a.state = $state,
+            a.last_triggered = CASE
+                WHEN $last_triggered IS NULL THEN NULL
+                ELSE datetime($last_triggered)
+            END
 
-            MERGE (e:Entity {entity_id: $automation_id})
-            MERGE (a)-[:REPRESENTED_BY]->(e)
-            """,
-            automation_id=entity_id,
-            name=name,
-            state=entity.get("state"),
-            last_triggered=last_triggered,
-        )
+        MERGE (e:Entity {entity_id: $automation_id})
+        MERGE (a)-[:REPRESENTED_BY]->(e)
+        """,
+        automation_id=entity_id,
+        name=name,
+        state=entity.get("state"),
+        last_triggered=last_triggered)
 
 
 def sync_automations_from_yaml(tx, automations):
@@ -444,7 +439,8 @@ def sync_automations_from_yaml(tx, automations):
             continue
 
         alias = automation.get("alias") or automation.get("id") or "unknown automation"
-        automation_id = automation.get("id") or f"automation.{alias.lower().replace(' ', '_')}"
+        raw_id = automation.get("id")
+        automation_id = raw_id or f"automation.{alias.lower().replace(' ', '_')}"
 
         trigger_block = automation.get("trigger") or automation.get("triggers")
         action_block = automation.get("action") or automation.get("actions")
@@ -454,52 +450,169 @@ def sync_automations_from_yaml(tx, automations):
         action_entities = extract_entity_ids_from_object(action_block)
         condition_entities = extract_entity_ids_from_object(condition_block)
 
-        tx.run(
-            """
-            MERGE (a:Automation {automation_id: $automation_id})
-            SET
-                a.name = $alias,
-                a.mode = $mode,
-                a.raw_id = $raw_id
-            """,
-            automation_id=automation_id,
-            alias=alias,
-            mode=automation.get("mode"),
-            raw_id=automation.get("id"),
-        )
+        tx.run("""
+        MERGE (a:Automation {automation_id: $automation_id})
+        SET a.name = $alias,
+            a.mode = $mode,
+            a.raw_id = $raw_id
+        """,
+        automation_id=automation_id,
+        alias=alias,
+        mode=automation.get("mode"),
+        raw_id=raw_id)
 
         for entity_id in trigger_entities:
-            tx.run(
-                """
-                MERGE (a:Automation {automation_id: $automation_id})
-                MERGE (e:Entity {entity_id: $entity_id})
-                MERGE (a)-[:TRIGGERED_BY]->(e)
-                """,
-                automation_id=automation_id,
-                entity_id=entity_id,
-            )
+            tx.run("""
+            MERGE (a:Automation {automation_id: $automation_id})
+            MERGE (e:Entity {entity_id: $entity_id})
+            MERGE (a)-[:TRIGGERED_BY]->(e)
+            """, automation_id=automation_id, entity_id=entity_id)
 
         for entity_id in action_entities:
-            tx.run(
-                """
-                MERGE (a:Automation {automation_id: $automation_id})
-                MERGE (e:Entity {entity_id: $entity_id})
-                MERGE (a)-[:CONTROLS]->(e)
-                """,
-                automation_id=automation_id,
-                entity_id=entity_id,
-            )
+            tx.run("""
+            MERGE (a:Automation {automation_id: $automation_id})
+            MERGE (e:Entity {entity_id: $entity_id})
+            MERGE (a)-[:CONTROLS]->(e)
+            """, automation_id=automation_id, entity_id=entity_id)
 
         for entity_id in condition_entities:
-            tx.run(
-                """
-                MERGE (a:Automation {automation_id: $automation_id})
-                MERGE (e:Entity {entity_id: $entity_id})
-                MERGE (a)-[:HAS_CONDITION]->(e)
-                """,
-                automation_id=automation_id,
-                entity_id=entity_id,
-            )
+            tx.run("""
+            MERGE (a:Automation {automation_id: $automation_id})
+            MERGE (e:Entity {entity_id: $entity_id})
+            MERGE (a)-[:HAS_CONDITION]->(e)
+            """, automation_id=automation_id, entity_id=entity_id)
+
+
+def sync_event_types(tx, events):
+    for event in events:
+        event_type = event.get("event")
+        listener_count = event.get("listener_count")
+
+        if not event_type:
+            continue
+
+        tx.run("""
+        MERGE (ev:EventType {name: $name})
+        SET ev.listener_count = $listener_count
+        """, name=event_type, listener_count=listener_count)
+
+
+def sync_logbook_events(tx, logbook):
+    for index, entry in enumerate(logbook):
+        entity_id = entry.get("entity_id")
+        name = entry.get("name")
+        message = entry.get("message")
+        when = entry.get("when")
+
+        if not when:
+            continue
+
+        event_id = f"{when}-{entity_id}-{index}"
+
+        tx.run("""
+        MERGE (ev:HomeAssistantEvent {event_id: $event_id})
+        SET ev.name = $name,
+            ev.message = $message,
+            ev.when = datetime($when),
+            ev.entity_id = $entity_id,
+            ev.domain = $domain
+
+        FOREACH (_ IN CASE WHEN $entity_id IS NOT NULL THEN [1] ELSE [] END |
+            MERGE (e:Entity {entity_id: $entity_id})
+            MERGE (ev)-[:AFFECTED_ENTITY]->(e)
+        )
+        """,
+        event_id=event_id,
+        name=name,
+        message=message,
+        when=when,
+        entity_id=entity_id,
+        domain=entry.get("domain"))
+
+
+def sync_problem_nodes(tx):
+    tx.run("""
+    MATCH (e:Entity)
+    WHERE e.is_problem = true
+    MERGE (p:Problem {problem_id: e.entity_id})
+    SET p.entity_id = e.entity_id,
+        p.state = e.state,
+        p.last_updated = e.last_updated,
+        p.description = "Entity is unavailable or unknown"
+    MERGE (p)-[:AFFECTS]->(e)
+    """)
+
+
+def sync_mqtt_model(tx, states):
+    if not ENABLE_MQTT_MODEL:
+        return
+
+    mqtt_entities = [
+        e for e in states
+        if e["entity_id"].startswith(("sensor.", "binary_sensor.", "switch.", "light."))
+        and "mqtt" in json.dumps(e.get("attributes", {})).lower()
+    ]
+
+    for entity in mqtt_entities:
+        entity_id = entity["entity_id"]
+
+        topic = (
+            entity.get("attributes", {}).get("state_topic")
+            or entity.get("attributes", {}).get("command_topic")
+        )
+
+        if not topic:
+            topic = f"unknown/{entity_id.replace('.', '/')}"
+
+        tx.run("""
+        MERGE (t:MqttTopic {topic: $topic})
+        MERGE (e:Entity {entity_id: $entity_id})
+        MERGE (e)-[:USES_MQTT_TOPIC]->(t)
+        """, topic=topic, entity_id=entity_id)
+
+
+def sync_zigbee_model(tx, states):
+    if not ENABLE_ZIGBEE_MODEL:
+        return
+
+    for entity in states:
+        entity_id = entity["entity_id"]
+        attributes = entity.get("attributes", {})
+        as_text = json.dumps(attributes, ensure_ascii=False).lower()
+
+        if "zigbee" not in as_text and "zha" not in as_text and "zigbee2mqtt" not in as_text:
+            continue
+
+        ieee = (
+            attributes.get("ieee")
+            or attributes.get("ieee_address")
+            or attributes.get("zigbee")
+            or entity_id
+        )
+
+        tx.run("""
+        MERGE (z:ZigbeeNode {ieee: $ieee})
+        SET z.name = $name,
+            z.entity_id = $entity_id
+
+        MERGE (e:Entity {entity_id: $entity_id})
+        MERGE (e)-[:REPRESENTS_ZIGBEE_NODE]->(z)
+        """,
+        ieee=normalize_value(ieee),
+        name=attributes.get("friendly_name", entity_id),
+        entity_id=entity_id)
+
+
+def create_dependency_shortcuts(tx):
+    tx.run("""
+    MATCH (trigger:Entity)<-[:TRIGGERED_BY]-(a:Automation)-[:CONTROLS]->(target:Entity)
+    MERGE (trigger)-[:CAN_CAUSE {via: a.automation_id}]->(target)
+    """)
+
+    tx.run("""
+    MATCH (e:Entity)-[:REPRESENTS]->(d:Device)-[:LOCATED_IN]->(a:Area)
+    MERGE (e)-[:EFFECTIVE_LOCATION]->(a)
+    """)
 
 
 def run_sync(driver):
@@ -509,7 +622,12 @@ def run_sync(driver):
     device_registry = get_device_registry()
     area_registry = get_area_registry()
     floor_registry = get_floor_registry()
-    automations_yaml = load_automations_yaml()
+    config_entries = get_config_entry_registry()
+
+    automations_yaml = load_yaml_file(AUTOMATIONS_YAML_PATH)
+
+    events = get_ha_events() if ENABLE_EVENT_HISTORY else []
+    logbook = get_ha_logbook() if ENABLE_EVENT_HISTORY else []
 
     registry_by_entity_id = {
         item.get("entity_id"): item
@@ -520,6 +638,7 @@ def run_sync(driver):
     with driver.session() as session:
         session.execute_write(sync_floors, floor_registry)
         session.execute_write(sync_areas, area_registry)
+        session.execute_write(sync_integrations, config_entries)
         session.execute_write(sync_devices, device_registry)
 
         for entity in states:
@@ -527,14 +646,23 @@ def run_sync(driver):
 
         session.execute_write(sync_automations_from_states, states)
         session.execute_write(sync_automations_from_yaml, automations_yaml)
+        session.execute_write(sync_event_types, events)
+        session.execute_write(sync_logbook_events, logbook)
+        session.execute_write(sync_problem_nodes)
+        session.execute_write(sync_mqtt_model, states)
+        session.execute_write(sync_zigbee_model, states)
+        session.execute_write(create_dependency_shortcuts)
 
     print(
         f"Synced: {len(states)} states, "
-        f"{len(entity_registry)} entity registry entries, "
+        f"{len(entity_registry)} entities, "
         f"{len(device_registry)} devices, "
         f"{len(area_registry)} areas, "
         f"{len(floor_registry)} floors, "
-        f"{len(automations_yaml)} automations"
+        f"{len(config_entries)} integrations, "
+        f"{len(automations_yaml)} automations, "
+        f"{len(events)} event types, "
+        f"{len(logbook)} logbook events"
     )
 
 
@@ -553,7 +681,7 @@ def wait_for_neo4j(driver, retries=30, delay=5):
 
 
 def main():
-    print("HA Neo4j sync with areas, devices, automations and diagnostics loaded")
+    print("HA Neo4j sync loaded: rooms, automations, diagnostics, events, MQTT, Zigbee")
 
     driver = GraphDatabase.driver(
         NEO4J_URI,
