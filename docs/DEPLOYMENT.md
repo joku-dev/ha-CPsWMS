@@ -8,6 +8,12 @@ Diese Checkliste hilft beim sicheren Aufbau und Betrieb des Home Assistant → N
 - [ ] Stelle sicher, dass Docker und Docker Compose installiert sind.
 - [ ] Lege eine Datei `.env` im Projektstamm an, um sensible Werte nicht ins Repo zu schreiben.
 
+Kopiere dazu `.env.example` und fülle die Werte aus:
+
+```bash
+cp .env.example .env
+```
+
 Beispiel `.env`:
 
 ```ini
@@ -16,6 +22,7 @@ HA_TOKEN=DEIN_HOME_ASSISTANT_TOKEN
 NEO4J_URI=bolt://neo4j:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=ChangeMe123!
+NEO4J_AUTH=neo4j/ChangeMe123!
 SYNC_INTERVAL_SECONDS=300
 ```
 

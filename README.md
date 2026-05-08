@@ -18,12 +18,11 @@ Dieses Projekt enthält eine Docker-Compose-Konfiguration für Neo4j und einen P
 ## Setup
 
 1. `.gitignore` prüfen und sicherstellen, dass lokale Datenverzeichnisse nicht versioniert werden.
-2. `docker-compose.yml` anpassen:
-   - Setze `HA_TOKEN` auf das tatsächliche Home Assistant Long-Lived Access Token
-   - Passe `HA_URL` an deine Home Assistant-URL an
-   - Passe bei Bedarf `NEO4J_AUTH` an
+2. Erstelle oder aktualisiere die Datei `.env` anhand von `.env.example`.
+3. `docker-compose.yml` verwendet die Umgebungsvariablen aus `.env`.
+4. Passe die Werte in `.env` an deine Umgebung an.
 
-3. Starte das Projekt:
+Starte das Projekt:
 
 ```bash
 docker compose up -d --build
