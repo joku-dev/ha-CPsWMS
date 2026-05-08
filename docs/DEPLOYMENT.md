@@ -24,6 +24,9 @@ NEO4J_USER=neo4j
 NEO4J_PASSWORD=ChangeMe123!
 NEO4J_AUTH=neo4j/ChangeMe123!
 SYNC_INTERVAL_SECONDS=300
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-5.5
+BATCH_SIZE=20
 ```
 
 ## 2. Konfiguration prüfen
@@ -42,6 +45,7 @@ docker compose up -d --build
 
 - [ ] Prüfe, ob der `neo4j`-Container startet.
 - [ ] Prüfe, ob der `ha-sync`-Container startet.
+- [ ] Prüfe, ob der `semantic-enrichment`-Container startet (optional, nur wenn OPENAI_API_KEY gesetzt ist).
 
 ## 4. Betrieb & Kontrolle
 
@@ -49,6 +53,12 @@ docker compose up -d --build
 
 ```bash
 docker compose logs -f ha-sync
+```
+
+- [ ] Überwache die Logs des Enrichment-Containers (optional):
+
+```bash
+docker compose logs -f semantic-enrichment
 ```
 
 - [ ] Öffne den Neo4j Browser unter `http://localhost:7474`.
@@ -65,8 +75,14 @@ docker compose logs -f ha-sync
   - `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` prüfen
   - Neo4j-Logs unter `neo4j/logs` prüfen
 
+- Bei Semantic Enrichment Problemen:
+  - `OPENAI_API_KEY` prüfen
+  - OpenAI Rate-Limits prüfen
+  - Logs des `semantic-enrichment` Containers prüfen
+
 ## 6. Sicherer Betrieb
 
 - [ ] Speichere keine echten Zugangsdaten im Git-Repository.
 - [ ] Nutze `.env` für Secrets und achte darauf, dass diese Datei ignoriert wird.
-- [ ] Dokumentiere Änderungen an `docker-compose.yml` und `ha-sync/sync.py` im Repository.
+- [ ] Dokumentiere Änderungen an `docker-compose.yml`, `ha-sync/sync.py` und `semantic-enrichment/semantic_enrich.py` im Repository.
+- [ ] Behandle `OPENAI_API_KEY` als vertraulich und speichere ihn nicht im Repository.

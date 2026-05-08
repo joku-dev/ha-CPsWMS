@@ -1,14 +1,28 @@
-# Home Assistant to Neo4j Sync
+# Home Assistant to Neo4j Sync + Semantic Enrichment
 
-Dieses Projekt enthält eine Docker-Compose-Konfiguration für Neo4j und einen Python-Sync-Container, der Home Assistant-States nach Neo4j schreibt.
+Dieses Projekt synchronisiert Home Assistant Entity-States nach Neo4j und bereichert diese mit semantischen Informationen mittels OpenAI.
+
+## Komponenten
+
+- **Neo4j Datenbank**: Graph-Datenbank für Entity-Speicherung und Beziehungen
+- **ha-sync**: Synchronisiert Home Assistant Entities nach Neo4j
+- **semantic-enrichment**: Bereichert Entities mit semantischen Rollen und Kategorien mittels OpenAI
 
 ## Inhalt
 
-- `docker-compose.yml` - Startet Neo4j und den `ha-sync`-Container
-- `ha-sync/Dockerfile` - Build-Definition für den Sync-Container
-- `ha-sync/requirements.txt` - Python-Abhängigkeiten
-- `ha-sync/sync.py` - Sync-Skript
-- `neo4j/` - Neo4j-Daten- und Log-Verzeichnis (diese Ordner werden nicht ins Git übernommen)
+- `docker-compose.yml` - Startet Neo4j, ha-sync und semantic-enrichment Container
+- `ha-sync/` - Synchronisiert Home Assistant States nach Neo4j
+  - `Dockerfile` - Build-Definition für den Sync-Container
+  - `requirements.txt` - Python-Abhängigkeiten
+  - `sync.py` - Sync-Skript
+- `semantic-enrichment/` - Bereichert Entities mit semantischen Informationen
+  - `Dockerfile` - Build-Definition für den Enrichment-Container
+  - `requirements.txt` - Python-Abhängigkeiten (openai, neo4j)
+  - `semantic_enrich.py` - Enrichment-Skript
+  - `prompts/` - System-Prompts für OpenAI
+  - `schemas/` - JSON-Schemas für die Antworten
+- `neo4j/` - Neo4j-Daten- und Log-Verzeichnis (nicht im Git)
+- `.env.example` - Beispiel für Umgebungsvariablen
 
 ## Vorbereitung für Git
 
@@ -18,9 +32,12 @@ Dieses Projekt enthält eine Docker-Compose-Konfiguration für Neo4j und einen P
 ## Setup
 
 1. `.gitignore` prüfen und sicherstellen, dass lokale Datenverzeichnisse nicht versioniert werden.
-2. Erstelle oder aktualisiere die Datei `.env` anhand von `.env.example`.
-3. `docker-compose.yml` verwendet die Umgebungsvariablen aus `.env`.
-4. Passe die Werte in `.env` an deine Umgebung an.
+1. Erstelle oder aktualisiere die Datei `.env` anhand von `.env.example`.
+2. `docker-compose.yml` verwendet die Umgebungsvariablen aus `.env`.
+3. Passe die Werte in `.env` an deine Umgebung an:
+   - Setze `HA_URL` und `HA_TOKEN` auf deine Home Assistant-Instanz
+   - Setze `OPENAI_API_KEY` auf deinen OpenAI API Key (für semantic-enrichment)
+   - Passe bei Bedarf Neo4j-Anmeldedaten an
 
 Starte das Projekt:
 
@@ -134,7 +151,8 @@ Das Projekt besteht aus folgenden Kernkomponenten:
 ## Zusätzliche Dokumentation
 
 - `docs/DEPLOYMENT.md`: Deployment-Checkliste und Betriebshinweise
-- `docs/ARCHITECTURE.md`: Architekturübersicht des Sync-Systems
+- `docs/ARCHITECTURE.md`: Architekturübersicht des Sync-Systems und Semantic Enrichment
+- `docs/SEMANTIC_ENRICHMENT.md`: Detaillierte Dokumentation zur Semantic Enrichment Komponente
 - `docs/FAQ.md`: Häufig gestellte Fragen und Fehlerbehebung
 
 ## Hinweise

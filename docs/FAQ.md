@@ -49,3 +49,30 @@ MATCH (e:Entity) RETURN e LIMIT 25;
 
 - Es legt eindeutige Regeln für `Entity`, `Room`, `DeviceClass` und `Unit` in Neo4j an.
 - Dadurch werden doppelte Knoten verhindert, wenn der Sync mehrmals läuft.
+
+## Wie verwende ich die Semantic Enrichment Komponente?
+
+- Stelle sicher, dass `OPENAI_API_KEY` in `.env` gesetzt ist.
+- Der Container wird durch `docker compose up` automatisch gestartet.
+- Die Komponente sucht nach Entities mit `semantic_enriched = false` und enreichert diese mit OpenAI.
+
+## Warum antwortet Semantic Enrichment nicht oder ist langsam?
+
+- Überprüfe, ob `OPENAI_API_KEY` korrekt ist.
+- Prüfe die API-Rate-Limits von OpenAI.
+- Überprüfe `BATCH_SIZE` und `SLEEP_SECONDS` - kleinere Batches sind langsamer.
+- Schaue die Logs mit:
+  ```bash
+docker compose logs -f semantic-enrichment
+```
+
+## Welche Daten erstellt die Semantic Enrichment Komponente?
+
+- `SemanticRole`: z. B. "Sensor", "Switch", "Light"
+- `SemanticCategory`: z. B. "Temperature", "Lighting", "Heating"
+- `Criticality`: Einstufung der Wichtigkeit (z. B. "critical", "high", "normal")
+- Beziehungen: `HAS_ROLE`, `IN_CATEGORY`, `HAS_CRITICALITY`
+
+## Kann ich die Semantic Enrichment Prompts anpassen?
+
+Ja! Bearbeite `semantic-enrichment/prompts/semantic_roles.md` für benutzerdefinierte Anweisungen und aktualisiere `semantic-enrichment/schemas/enrichment_schema.json` für die erwartete Antwortstruktur.
