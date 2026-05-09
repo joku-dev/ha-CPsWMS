@@ -19,12 +19,19 @@ from config import (
 
 
 class BaseEnricher(ABC):
+    """Shared enrichment workflow for all specialized enrichers.
+
+    Subclasses define graph-specific candidate queries and write-back logic.
+    This base class centralizes prompt/schema loading, LLM calls and validation.
+    """
+
     name = "base"
     prompt_file = None
     schema_file = None
     response_key = None
 
     def __init__(self):
+        """Create reusable OpenAI and Neo4j clients for one enricher instance."""
         self.client = OpenAI(api_key=OPENAI_API_KEY)
         self.driver = GraphDatabase.driver(
             NEO4J_URI,
@@ -32,10 +39,12 @@ class BaseEnricher(ABC):
         )
 
     def setup(self):
+        """Prepare shared and enricher-specific database constraints."""
         self.create_base_constraints()
         self.create_constraints()
 
     def create_base_constraints(self):
+        """Create constraints needed across all enrichers."""
         with self.driver.session() as session:
             session.run("""
             CREATE CONSTRAINT semantic_enrichment_event_id_unique IF NOT EXISTS
@@ -44,6 +53,7 @@ class BaseEnricher(ABC):
             """)
 
     def load_prompt(self):
+        """Load the system prompt referenced by prompt_file."""
         path = PROMPTS_DIR / self.prompt_file
         print(f"[{self.name}] Loading prompt: {path}")
 
@@ -51,6 +61,7 @@ class BaseEnricher(ABC):
             return file.read()
 
     def load_schema(self):
+        """Load the JSON schema referenced by schema_file."""
         path = SCHEMAS_DIR / self.schema_file
         print(f"[{self.name}] Loading schema: {path}")
 
@@ -58,6 +69,7 @@ class BaseEnricher(ABC):
             return json.load(file)
 
     def call_llm(self, payload):
+        """Invoke OpenAI with structured-output schema and parse JSON response."""
         print(f"[{self.name}] CALLING OPENAI...")
         print(f"[{self.name}] Model: {OPENAI_MODEL}")
         print(f"[{self.name}] Payload items: {len(payload.get('items', []))}")
@@ -108,6 +120,7 @@ class BaseEnricher(ABC):
             return {self.response_key: []}
 
     def validate_confidence(self, item):
+        """Validate confidence field against configured range and threshold."""
         confidence = item.get("confidence", 0)
 
         try:
@@ -129,6 +142,7 @@ class BaseEnricher(ABC):
         return True
 
     def run_once(self):
+        """Run one enrichment iteration for the current enricher."""
         print(f"[{self.name}] Selecting candidates...")
 
         items = self.get_candidates(BATCH_SIZE)

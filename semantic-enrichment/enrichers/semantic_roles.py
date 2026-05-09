@@ -5,12 +5,15 @@ from enrichers.base import BaseEnricher
 
 
 class SemanticRolesEnricher(BaseEnricher):
+    """Assign semantic role, category and criticality to entities."""
+
     name = "semantic_roles"
     prompt_file = "semantic_roles.md"
     schema_file = "semantic_roles_schema.json"
     response_key = "enrichments"
 
     def create_constraints(self):
+        """Ensure uniqueness constraints for role/category/criticality nodes."""
         with self.driver.session() as session:
             session.run("""
             CREATE CONSTRAINT semantic_role_name_unique IF NOT EXISTS
@@ -31,6 +34,7 @@ class SemanticRolesEnricher(BaseEnricher):
             """)
 
     def get_candidates(self, limit):
+        """Fetch entities that have not yet been semantically classified."""
         query = """
         MATCH (e:Entity)
         WHERE coalesce(e.semantic_enriched, false) = false
@@ -50,6 +54,7 @@ class SemanticRolesEnricher(BaseEnricher):
             return [dict(r) for r in session.run(query, limit=limit)]
 
     def validate_items(self, llm_items, input_items):
+        """Keep only in-batch entity ids with valid confidence."""
         allowed_ids = {item["entity_id"] for item in input_items}
 
         return [
@@ -59,6 +64,7 @@ class SemanticRolesEnricher(BaseEnricher):
         ]
 
     def write_results(self, items):
+        """Persist role/category/criticality relationships and audit event."""
         query = """
         MATCH (e:Entity {entity_id: $entity_id})
 

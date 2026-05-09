@@ -1,19 +1,19 @@
 # Enrichers Package
 
-Stand: 2026-05-08
+Stand: 2026-05-09
 
 Dieser Ordner ist jetzt die aktive Laufzeitquelle fuer den Orchestrator `semantic_enrich.py`.
 
 ## Aktive Enricher
 
 1. `semantic_roles.py`
-2. `automation_intent.py`
-3. `fault_analysis.py`
-4. `anomaly_detection.py`
-5. `room_inference.py`
-6. `dependency_reasoning.py`
-7. `failure_impact.py`
-8. `semantic_descriptions.py`
+2. `room_inference.py`
+3. `automation_intent.py`
+4. `fault_analysis.py`
+5. `anomaly_detection.py`
+6. `failure_impact.py`
+7. `semantic_descriptions.py`
+8. `dependency_reasoning.py`
 9. `recommended_actions.py`
 
 ## Basisklasse

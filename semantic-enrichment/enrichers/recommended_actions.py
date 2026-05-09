@@ -12,6 +12,7 @@ class RecommendedActionsEnricher(BaseEnricher):
     response_key = "recommended_actions"
 
     def create_constraints(self):
+        """Ensure unique recommended action type nodes by name."""
         with self.driver.session() as session:
             session.run("""
             CREATE CONSTRAINT recommended_action_type_unique IF NOT EXISTS
@@ -20,6 +21,7 @@ class RecommendedActionsEnricher(BaseEnricher):
             """)
 
     def get_candidates(self, limit):
+        """Fetch entities that still need actionable recommendations."""
         query = """
         MATCH (e:Entity)
         WHERE e.recommended_actions_enriched IS NULL
@@ -43,6 +45,7 @@ class RecommendedActionsEnricher(BaseEnricher):
             return [dict(r) for r in session.run(query, limit=limit)]
 
     def validate_items(self, llm_items, input_items):
+        """Keep only in-batch entity ids with valid confidence."""
         allowed_ids = {item["entity_id"] for item in input_items}
         return [
             item
@@ -51,6 +54,7 @@ class RecommendedActionsEnricher(BaseEnricher):
         ]
 
     def write_results(self, items):
+        """Persist recommended actions and prioritization metadata."""
         query = """
         MATCH (e:Entity {entity_id: $entity_id})
         MERGE (a:RecommendedActionType {name: $action_type})

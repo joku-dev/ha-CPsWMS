@@ -12,6 +12,7 @@ class FaultAnalysisEnricher(BaseEnricher):
     response_key = "faults"
 
     def create_constraints(self):
+        """Ensure unique fault type nodes by name."""
         with self.driver.session() as session:
             session.run("""
             CREATE CONSTRAINT fault_type_name_unique IF NOT EXISTS
@@ -20,6 +21,7 @@ class FaultAnalysisEnricher(BaseEnricher):
             """)
 
     def get_candidates(self, limit):
+        """Fetch problem entities that still need fault classification."""
         query = """
         MATCH (e:Entity)
         WHERE e.is_problem = true
@@ -41,6 +43,7 @@ class FaultAnalysisEnricher(BaseEnricher):
             return [dict(r) for r in session.run(query, limit=limit)]
 
     def validate_items(self, llm_items, input_items):
+        """Keep only in-batch entity ids with valid confidence."""
         allowed_ids = {item["entity_id"] for item in input_items}
         return [
             item
@@ -49,6 +52,7 @@ class FaultAnalysisEnricher(BaseEnricher):
         ]
 
     def write_results(self, items):
+        """Persist fault classification and impact details per entity."""
         query = """
         MATCH (e:Entity {entity_id: $entity_id})
         MERGE (f:FaultType {name: $fault_type})

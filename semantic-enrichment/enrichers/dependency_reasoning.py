@@ -12,9 +12,11 @@ class DependencyReasoningEnricher(BaseEnricher):
     response_key = "relationships"
 
     def create_constraints(self):
+        """No additional constraints required for relationship edges."""
         pass
 
     def get_candidates(self, limit):
+        """Fetch entity context used to infer semantic dependencies."""
         query = """
         MATCH (e:Entity)
         OPTIONAL MATCH (e)-[:BELONGS_TO_DOMAIN]->(d:Domain)
@@ -33,6 +35,7 @@ class DependencyReasoningEnricher(BaseEnricher):
             return [dict(r) for r in session.run(query, limit=limit)]
 
     def validate_items(self, llm_items, input_items):
+        """Keep only valid in-batch source/target ids and confidence."""
         allowed_ids = {item["entity_id"] for item in input_items}
         valid = []
 
@@ -51,6 +54,7 @@ class DependencyReasoningEnricher(BaseEnricher):
         return valid
 
     def write_results(self, items):
+        """Persist inferred SEMANTICALLY_RELATED_TO relationships."""
         query = """
         MATCH (source:Entity {entity_id: $source_entity_id})
         MATCH (target:Entity {entity_id: $target_entity_id})

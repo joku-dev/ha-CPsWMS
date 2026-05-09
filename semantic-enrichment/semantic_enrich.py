@@ -1,4 +1,7 @@
+"""Main orchestrator for semantic enrichment workers.
 
+This module owns runtime ordering, startup checks, and resilient loop execution.
+"""
 import time
 
 from config import SLEEP_SECONDS
@@ -12,7 +15,9 @@ from enrichers.failure_impact import FailureImpactEnricher
 from enrichers.recommended_actions import RecommendedActionsEnricher
 from enrichers.dependency_reasoning import DependencyReasoningEnricher
 
+
 def wait_for_neo4j(enricher, retries=30, delay=5):
+    """Block startup until Neo4j is reachable or retries are exhausted."""
     for attempt in range(1, retries + 1):
         try:
             with enricher.driver.session() as session:
@@ -27,6 +32,7 @@ def wait_for_neo4j(enricher, retries=30, delay=5):
 
 
 def main():
+    """Initialize enrichers and execute them continuously in dependency order."""
     print("Semantic enrichment orchestrator started.")
 
     enrichers = [
@@ -35,7 +41,7 @@ def main():
         # Raumableitung frueh, weil Area-Kontext fuer spaetere Analysen hilfreich ist.
         RoomInferenceEnricher(),
 
-        # Analyse von Automationen und Problemzuständen.
+        # Analyse von Automationen und Problemzustaenden.
         AutomationIntentEnricher(),
         FaultAnalysisEnricher(),
         AnomalyDetectionEnricher(),

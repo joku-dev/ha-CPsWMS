@@ -12,6 +12,7 @@ class AnomalyDetectionEnricher(BaseEnricher):
     response_key = "anomalies"
 
     def create_constraints(self):
+        """Ensure unique anomaly type nodes by name."""
         with self.driver.session() as session:
             session.run("""
             CREATE CONSTRAINT anomaly_type_name_unique IF NOT EXISTS
@@ -20,6 +21,7 @@ class AnomalyDetectionEnricher(BaseEnricher):
             """)
 
     def get_candidates(self, limit):
+        """Fetch entities that have not yet been anomaly-checked."""
         query = """
         MATCH (e:Entity)
         WHERE e.anomaly_checked IS NULL
@@ -41,6 +43,7 @@ class AnomalyDetectionEnricher(BaseEnricher):
             return [dict(r) for r in session.run(query, limit=limit)]
 
     def validate_items(self, llm_items, input_items):
+        """Keep only in-batch entity ids with valid confidence."""
         allowed_ids = {item["entity_id"] for item in input_items}
         return [
             item
@@ -49,6 +52,7 @@ class AnomalyDetectionEnricher(BaseEnricher):
         ]
 
     def write_results(self, items):
+        """Persist anomaly relationships with severity metadata."""
         query = """
         MATCH (e:Entity {entity_id: $entity_id})
         MERGE (a:AnomalyType {name: $anomaly_type})

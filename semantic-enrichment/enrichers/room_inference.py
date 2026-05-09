@@ -12,9 +12,11 @@ class RoomInferenceEnricher(BaseEnricher):
     response_key = "room_inferences"
 
     def create_constraints(self):
+        """No additional constraints required for inferred area links."""
         pass
 
     def get_candidates(self, limit):
+        """Select entities without explicit room assignment."""
         query = """
         MATCH (e:Entity)
         WHERE NOT (e)-[:LOCATED_IN]->(:Area)
@@ -32,6 +34,7 @@ class RoomInferenceEnricher(BaseEnricher):
             return [dict(r) for r in session.run(query, limit=limit)]
 
     def validate_items(self, llm_items, input_items):
+        """Keep only in-batch entity ids with valid confidence."""
         allowed_ids = {item["entity_id"] for item in input_items}
         return [
             item
@@ -40,6 +43,7 @@ class RoomInferenceEnricher(BaseEnricher):
         ]
 
     def write_results(self, items):
+        """Write inferred room links and mark entities as processed."""
         query = """
         MATCH (e:Entity {entity_id: $entity_id})
         MERGE (a:Area {area_id: $suggested_area})

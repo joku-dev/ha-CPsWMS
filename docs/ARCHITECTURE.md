@@ -46,13 +46,13 @@ flowchart LR
 Aktive Enricher:
 
 1. `semantic_roles`
-2. `automation_intent`
-3. `fault_analysis`
-4. `anomaly_detection`
-5. `room_inference`
-6. `dependency_reasoning`
-7. `failure_impact`
-8. `semantic_descriptions`
+2. `room_inference`
+3. `automation_intent`
+4. `fault_analysis`
+5. `anomaly_detection`
+6. `failure_impact`
+7. `semantic_descriptions`
+8. `dependency_reasoning`
 9. `recommended_actions`
 
 Die Komponente nutzt einen gemeinsamen Basistyp (`enrichers/base.py`) mit einheitlichem Kontrollfluss: Kandidaten lesen, LLM aufrufen, Ergebnis validieren, Graph schreiben.

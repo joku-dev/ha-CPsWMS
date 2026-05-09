@@ -12,6 +12,7 @@ class SemanticDescriptionsEnricher(BaseEnricher):
     response_key = "semantic_descriptions"
 
     def create_constraints(self):
+        """Ensure one semantic description node per entity."""
         with self.driver.session() as session:
             session.run("""
             CREATE CONSTRAINT semantic_description_entity_unique IF NOT EXISTS
@@ -20,6 +21,7 @@ class SemanticDescriptionsEnricher(BaseEnricher):
             """)
 
     def get_candidates(self, limit):
+        """Fetch entities that still need generated semantic descriptions."""
         query = """
         MATCH (e:Entity)
         WHERE e.semantic_description_enriched IS NULL
@@ -42,6 +44,7 @@ class SemanticDescriptionsEnricher(BaseEnricher):
             return [dict(r) for r in session.run(query, limit=limit)]
 
     def validate_items(self, llm_items, input_items):
+        """Keep only in-batch entity ids with valid confidence."""
         allowed_ids = {item["entity_id"] for item in input_items}
         return [
             item
@@ -50,6 +53,7 @@ class SemanticDescriptionsEnricher(BaseEnricher):
         ]
 
     def write_results(self, items):
+        """Persist description nodes and HAS_SEMANTIC_DESCRIPTION links."""
         query = """
         MATCH (e:Entity {entity_id: $entity_id})
         MERGE (d:SemanticDescription {entity_id: $entity_id})

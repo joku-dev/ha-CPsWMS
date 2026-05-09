@@ -12,6 +12,7 @@ class AutomationIntentEnricher(BaseEnricher):
     response_key = "automation_intents"
 
     def create_constraints(self):
+        """Ensure unique automation intent nodes by name."""
         with self.driver.session() as session:
             session.run("""
             CREATE CONSTRAINT automation_intent_name_unique IF NOT EXISTS
@@ -20,6 +21,7 @@ class AutomationIntentEnricher(BaseEnricher):
             """)
 
     def get_candidates(self, limit):
+        """Fetch automations that have not yet received an intent label."""
         query = """
         MATCH (a:Automation)
         WHERE a.intent_enriched IS NULL
@@ -40,6 +42,7 @@ class AutomationIntentEnricher(BaseEnricher):
             return [dict(r) for r in session.run(query, limit=limit)]
 
     def validate_items(self, llm_items, input_items):
+        """Keep only in-batch automation ids with valid confidence."""
         allowed_ids = {item["automation_id"] for item in input_items}
         return [
             item
@@ -48,6 +51,7 @@ class AutomationIntentEnricher(BaseEnricher):
         ]
 
     def write_results(self, items):
+        """Persist inferred automation intent relationships."""
         query = """
         MATCH (a:Automation {automation_id: $automation_id})
         MERGE (intent:AutomationIntent {name: $intent})

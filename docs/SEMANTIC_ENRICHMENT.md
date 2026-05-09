@@ -11,13 +11,13 @@ Nach dem Roh-Sync (`ha-sync`) werden Entities und Automationen in spezialisierte
 Aktiv im Orchestrator (`semantic_enrich.py`):
 
 1. `SemanticRolesEnricher`
-2. `AutomationIntentEnricher`
-3. `FaultAnalysisEnricher`
-4. `AnomalyDetectionEnricher`
-5. `RoomInferenceEnricher`
-6. `DependencyReasoningEnricher`
-7. `FailureImpactEnricher`
-8. `SemanticDescriptionsEnricher`
+2. `RoomInferenceEnricher`
+3. `AutomationIntentEnricher`
+4. `FaultAnalysisEnricher`
+5. `AnomalyDetectionEnricher`
+6. `FailureImpactEnricher`
+7. `SemanticDescriptionsEnricher`
+8. `DependencyReasoningEnricher`
 9. `RecommendedActionsEnricher`
 
 ## Architektur in der Komponente

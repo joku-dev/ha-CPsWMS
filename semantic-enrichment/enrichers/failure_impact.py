@@ -12,6 +12,7 @@ class FailureImpactEnricher(BaseEnricher):
     response_key = "failure_impacts"
 
     def create_constraints(self):
+        """Ensure unique failure impact level nodes by level value."""
         with self.driver.session() as session:
             session.run("""
             CREATE CONSTRAINT failure_impact_level_unique IF NOT EXISTS
@@ -20,6 +21,7 @@ class FailureImpactEnricher(BaseEnricher):
             """)
 
     def get_candidates(self, limit):
+        """Fetch entities that still need failure impact assessment."""
         query = """
         MATCH (e:Entity)
         WHERE e.failure_impact_enriched IS NULL
@@ -47,6 +49,7 @@ class FailureImpactEnricher(BaseEnricher):
             return [dict(r) for r in session.run(query, limit=limit)]
 
     def validate_items(self, llm_items, input_items):
+        """Keep only in-batch entity ids with valid confidence."""
         allowed_ids = {item["entity_id"] for item in input_items}
         return [
             item
@@ -55,6 +58,7 @@ class FailureImpactEnricher(BaseEnricher):
         ]
 
     def write_results(self, items):
+        """Persist failure impact relationships and summaries."""
         query = """
         MATCH (e:Entity {entity_id: $entity_id})
         MERGE (level:FailureImpactLevel {level: $impact_level})
