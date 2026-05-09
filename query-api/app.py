@@ -74,12 +74,20 @@ def capabilities(limit):
     rows = run_query(
         """
         MATCH (cap:Capability)
+        OPTIONAL MATCH (provider:Entity)-[provides:PROVIDES_CAPABILITY]->(cap)
         OPTIONAL MATCH (source)-[rel:DEPENDS_ON|IMPACTS|DEGRADES|RECOVERS|CAUSES]->(cap)
         OPTIONAL MATCH (cap)-[out:DEPENDS_ON|IMPACTS|DEGRADES|RECOVERS|CAUSES]->(target)
         OPTIONAL MATCH (scenario:SimulationScenario)-[:EVALUATES_TARGET]->(cap)
         OPTIONAL MATCH (scenario)-[ready:HAS_SIMULATION_READINESS]->(level:SimulationReadinessLevel)
         RETURN
             cap.name AS capability,
+            collect(DISTINCT {
+                entity_id: provider.entity_id,
+                friendly_name: provider.friendly_name,
+                provides_level: provides.provides_level,
+                confidence: provides.confidence,
+                reason: provides.reason
+            })[0..10] AS providers,
             count(DISTINCT source) AS inbound_dependency_count,
             count(DISTINCT target) AS outbound_dependency_count,
             collect(DISTINCT {
@@ -174,8 +182,20 @@ def what_if_capability(name, limit):
     rows = run_query(
         """
         MATCH (capability:Capability {name: $name})
+        CALL {
+            WITH capability
+            MATCH (provider:Entity)-[provides:PROVIDES_CAPABILITY]->(capability)
+            RETURN provider AS entity, provides AS provides
+
+            UNION
+
+            WITH capability
+            MATCH (fallback:Entity)-[impact:HAS_FAILURE_IMPACT]->(:FailureImpactLevel)
+            WHERE impact.affected_capability = capability.name
+            RETURN fallback AS entity, null AS provides
+        }
         OPTIONAL MATCH (entity)-[impact:HAS_FAILURE_IMPACT]->(:FailureImpactLevel)
-        WHERE impact.affected_capability = $name
+        WHERE impact.affected_capability = $name OR impact IS NULL
         OPTIONAL MATCH (entity)-[:HAS_CRITICALITY]->(criticality:Criticality)
         OPTIONAL MATCH (entity)<-[:TRIGGERED_BY|CONTROLS|HAS_CONDITION]-(automation:Automation)
         OPTIONAL MATCH (source)-[rel:DEPENDS_ON|IMPACTS|DEGRADES|RECOVERS|CAUSES]->(capability)
@@ -186,6 +206,8 @@ def what_if_capability(name, limit):
             entity.friendly_name AS friendly_name,
             entity.state AS state,
             criticality.level AS criticality,
+            provides.provides_level AS provides_level,
+            provides.confidence AS provides_confidence,
             impact.operational_consequence AS operational_consequence,
             collect(DISTINCT {
                 type: type(rel),
@@ -222,6 +244,7 @@ def entity_impact(entity_id):
         OPTIONAL MATCH (entity)-[:HAS_SEMANTIC_ROLE]->(role:SemanticRole)
         OPTIONAL MATCH (entity)-[:HAS_SEMANTIC_CATEGORY]->(category:SemanticCategory)
         OPTIONAL MATCH (entity)-[:HAS_CRITICALITY]->(criticality:Criticality)
+        OPTIONAL MATCH (entity)-[provides:PROVIDES_CAPABILITY]->(capability:Capability)
         OPTIONAL MATCH (entity)-[impact:HAS_FAILURE_IMPACT]->(impact_level:FailureImpactLevel)
         OPTIONAL MATCH (entity)-[:HAS_INCIDENT]->(incident:Incident)
         OPTIONAL MATCH (entity)-[:HAS_TIMELINE_EVENT]->(timeline:TimelineEvent)
@@ -235,6 +258,12 @@ def entity_impact(entity_id):
             role.name AS semantic_role,
             category.name AS semantic_category,
             criticality.level AS criticality,
+            collect(DISTINCT {
+                capability: capability.name,
+                provides_level: provides.provides_level,
+                confidence: provides.confidence,
+                reason: provides.reason
+            }) AS provided_capabilities,
             collect(DISTINCT {
                 level: impact_level.level,
                 affected_capability: impact.affected_capability,

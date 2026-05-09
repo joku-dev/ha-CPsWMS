@@ -105,11 +105,12 @@ Der Orchestrator `semantic-enrichment/semantic_enrich.py` fuehrt folgende Enrich
 5. `anomaly_detection`
 6. `temporal_event_model`
 7. `failure_impact`
-8. `semantic_descriptions`
-9. `dependency_reasoning`
-10. `causal_dependency`
-11. `recommended_actions`
-12. `simulation_readiness`
+8. `capability_mapping`
+9. `semantic_descriptions`
+10. `dependency_reasoning`
+11. `causal_dependency`
+12. `recommended_actions`
+13. `simulation_readiness`
 
 ## Von Enrichment erzeugte Relationen
 
@@ -125,6 +126,7 @@ Der Orchestrator `semantic-enrichment/semantic_enrich.py` fuehrt folgende Enrich
 - `HAS_INCIDENT`
 - `INFERRED_LOCATION`
 - `SEMANTICALLY_RELATED_TO`
+- `PROVIDES_CAPABILITY`
 - `CAUSES`
 - `DEPENDS_ON`
 - `IMPACTS`

@@ -13,6 +13,7 @@ from enrichers.temporal_event_model import TemporalEventModelEnricher
 from enrichers.room_inference import RoomInferenceEnricher
 from enrichers.semantic_descriptions import SemanticDescriptionsEnricher
 from enrichers.failure_impact import FailureImpactEnricher
+from enrichers.capability_mapping import CapabilityMappingEnricher
 from enrichers.recommended_actions import RecommendedActionsEnricher
 from enrichers.dependency_reasoning import DependencyReasoningEnricher
 from enrichers.causal_dependency import CausalDependencyEnricher
@@ -52,6 +53,7 @@ def main():
 
         # Abgeleitete, hoehere Analysen auf Basis vorheriger Ergebnisse.
         FailureImpactEnricher(),
+        CapabilityMappingEnricher(),
         SemanticDescriptionsEnricher(),
         DependencyReasoningEnricher(),
         CausalDependencyEnricher(),

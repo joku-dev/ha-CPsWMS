@@ -46,8 +46,15 @@ class CausalDependencyEnricher(BaseEnricher):
 
         MATCH (e)-[impact_rel:HAS_FAILURE_IMPACT]->(impact:FailureImpactLevel)
         WHERE impact_rel.affected_capability IS NOT NULL
+        OPTIONAL MATCH (e)-[provides_rel:PROVIDES_CAPABILITY]->(provided_capability:Capability)
         OPTIONAL MATCH (e)-[:EFFECTIVE_LOCATION]->(area:Area)
-        WITH e, role, category, area, impact, collect(DISTINCT impact_rel.affected_capability) AS raw_capabilities
+        WITH
+            e,
+            role,
+            category,
+            area,
+            impact,
+            collect(DISTINCT impact_rel.affected_capability) + collect(DISTINCT provided_capability.name) AS raw_capabilities
 
         CALL {
             WITH e
@@ -77,6 +84,7 @@ class CausalDependencyEnricher(BaseEnricher):
             OPTIONAL MATCH (a)-[:CONTROLS]->(target:Entity)
             OPTIONAL MATCH (target)-[:HAS_SEMANTIC_ROLE]->(target_role:SemanticRole)
             OPTIONAL MATCH (target)-[target_impact:HAS_FAILURE_IMPACT]->(:FailureImpactLevel)
+            OPTIONAL MATCH (target)-[:PROVIDES_CAPABILITY]->(target_provided:Capability)
             RETURN collect(DISTINCT {
                 automation_id: a.automation_id,
                 name: a.name,
@@ -84,7 +92,7 @@ class CausalDependencyEnricher(BaseEnricher):
                 target_entity_id: target.entity_id,
                 target_friendly_name: target.friendly_name,
                 target_role: target_role.name,
-                target_capability: target_impact.affected_capability
+                target_capability: coalesce(target_provided.name, target_impact.affected_capability)
             })[0..8] AS triggered_automations
         }
 
@@ -94,6 +102,7 @@ class CausalDependencyEnricher(BaseEnricher):
             OPTIONAL MATCH (a)-[:TRIGGERED_BY]->(trigger:Entity)
             OPTIONAL MATCH (trigger)-[:HAS_SEMANTIC_ROLE]->(trigger_role:SemanticRole)
             OPTIONAL MATCH (trigger)-[trigger_impact:HAS_FAILURE_IMPACT]->(:FailureImpactLevel)
+            OPTIONAL MATCH (trigger)-[:PROVIDES_CAPABILITY]->(trigger_provided:Capability)
             RETURN collect(DISTINCT {
                 automation_id: a.automation_id,
                 name: a.name,
@@ -101,7 +110,7 @@ class CausalDependencyEnricher(BaseEnricher):
                 trigger_entity_id: trigger.entity_id,
                 trigger_friendly_name: trigger.friendly_name,
                 trigger_role: trigger_role.name,
-                trigger_capability: trigger_impact.affected_capability
+                trigger_capability: coalesce(trigger_provided.name, trigger_impact.affected_capability)
             })[0..8] AS controlling_automations
         }
 
@@ -110,11 +119,12 @@ class CausalDependencyEnricher(BaseEnricher):
             OPTIONAL MATCH (e)-[:CAN_CAUSE]->(caused:Entity)
             OPTIONAL MATCH (caused)-[:HAS_SEMANTIC_ROLE]->(caused_role:SemanticRole)
             OPTIONAL MATCH (caused)-[caused_impact:HAS_FAILURE_IMPACT]->(:FailureImpactLevel)
+            OPTIONAL MATCH (caused)-[:PROVIDES_CAPABILITY]->(caused_provided:Capability)
             RETURN collect(DISTINCT {
                 entity_id: caused.entity_id,
                 friendly_name: caused.friendly_name,
                 semantic_role: caused_role.name,
-                affected_capability: caused_impact.affected_capability
+                affected_capability: coalesce(caused_provided.name, caused_impact.affected_capability)
             })[0..8] AS can_cause_entities
         }
 

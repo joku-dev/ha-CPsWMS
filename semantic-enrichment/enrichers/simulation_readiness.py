@@ -109,12 +109,19 @@ class SimulationReadinessEnricher(BaseEnricher):
             WITH target_id, target_type
             OPTIONAL MATCH (entity:Entity)
             OPTIONAL MATCH (entity)-[impact_rel:HAS_FAILURE_IMPACT]->(:FailureImpactLevel)
+            OPTIONAL MATCH (entity)-[provides_rel:PROVIDES_CAPABILITY]->(provided_capability:Capability)
             WHERE
                 (target_type = "entity" AND entity.entity_id = target_id)
                 OR (target_type = "integration" AND exists {
                     MATCH (entity)-[:PROVIDED_BY]->(:Integration {domain: target_id})
                 })
-                OR (target_type = "capability" AND impact_rel.affected_capability = target_id)
+                OR (
+                    target_type = "capability"
+                    AND (
+                        impact_rel.affected_capability = target_id
+                        OR provided_capability.name = target_id
+                    )
+                )
             OPTIONAL MATCH (entity)-[:HAS_INCIDENT]->(incident:Incident)
             OPTIONAL MATCH (entity)-[:HAS_FAULT_ANALYSIS]->(fault:FaultType)
             OPTIONAL MATCH (entity)-[:HAS_ANOMALY]->(anomaly:AnomalyType)
@@ -122,7 +129,7 @@ class SimulationReadinessEnricher(BaseEnricher):
             OPTIONAL MATCH (entity)<-[:TRIGGERED_BY|CONTROLS|HAS_CONDITION]-(automation:Automation)
             OPTIONAL MATCH (entity)-[:HAS_CRITICALITY]->(criticality:Criticality)
             RETURN
-                count(DISTINCT impact_rel) AS capability_signal_count,
+                count(DISTINCT impact_rel) + count(DISTINCT provides_rel) AS capability_signal_count,
                 count(DISTINCT incident) + count(DISTINCT fault) + count(DISTINCT anomaly) AS failure_history_count,
                 count(DISTINCT timeline) AS temporal_event_count,
                 count(DISTINCT automation) AS automation_relationship_count,
@@ -134,7 +141,7 @@ class SimulationReadinessEnricher(BaseEnricher):
                     entity_id: entity.entity_id,
                     friendly_name: entity.friendly_name,
                     criticality: criticality.level,
-                    affected_capability: impact_rel.affected_capability
+                    affected_capability: coalesce(provided_capability.name, impact_rel.affected_capability)
                 })[0..10] AS entity_samples
         }
 

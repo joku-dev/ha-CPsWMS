@@ -13,11 +13,12 @@ Dieser Ordner ist jetzt die aktive Laufzeitquelle fuer den Orchestrator `semanti
 5. `anomaly_detection.py`
 6. `temporal_event_model.py`
 7. `failure_impact.py`
-8. `semantic_descriptions.py`
-9. `dependency_reasoning.py`
-10. `causal_dependency.py`
-11. `recommended_actions.py`
-12. `simulation_readiness.py`
+8. `capability_mapping.py`
+9. `semantic_descriptions.py`
+10. `dependency_reasoning.py`
+11. `causal_dependency.py`
+12. `recommended_actions.py`
+13. `simulation_readiness.py`
 
 ## Basisklasse
 

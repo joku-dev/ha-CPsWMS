@@ -40,17 +40,18 @@ flowchart LR
   E5[anomaly_detection]
   E6[temporal_event_model]
   E7[failure_impact]
-  E8[semantic_descriptions]
-  E9[dependency_reasoning]
-  E10[causal_dependency]
-  E11[recommended_actions]
-  E12[simulation_readiness]
+  E8[capability_mapping]
+  E9[semantic_descriptions]
+  E10[dependency_reasoning]
+  E11[causal_dependency]
+  E12[recommended_actions]
+  E13[simulation_readiness]
 
   HA -->|REST + WebSocket| Sync
   Sync -->|Bolt write| Neo4j
   Neo4j -->|Candidate read| Orch
 
-  Orch --> E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7 --> E8 --> E9 --> E10 --> E11 --> E12
+  Orch --> E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7 --> E8 --> E9 --> E10 --> E11 --> E12 --> E13
 
   E1 -->|LLM request| OpenAI
   E2 -->|LLM request| OpenAI
@@ -64,6 +65,7 @@ flowchart LR
   E10 -->|LLM request| OpenAI
   E11 -->|LLM request| OpenAI
   E12 -->|LLM request| OpenAI
+  E13 -->|LLM request| OpenAI
 
   E1 -->|Graph write| Neo4j
   E2 -->|Graph write| Neo4j
@@ -77,6 +79,7 @@ flowchart LR
   E10 -->|Graph write| Neo4j
   E11 -->|Graph write| Neo4j
   E12 -->|Graph write| Neo4j
+  E13 -->|Graph write| Neo4j
 
   QueryAPI -->|Bolt read| Neo4j
   Chat -->|Cypher generation| OpenAI
@@ -168,11 +171,12 @@ Die aktuell verdrahtete Reihenfolge in `semantic_enrich.py`:
 5. `AnomalyDetectionEnricher`
 6. `TemporalEventModelEnricher`
 7. `FailureImpactEnricher`
-8. `SemanticDescriptionsEnricher`
-9. `DependencyReasoningEnricher`
-10. `CausalDependencyEnricher`
-11. `RecommendedActionsEnricher`
-12. `SimulationReadinessEnricher`
+8. `CapabilityMappingEnricher`
+9. `SemanticDescriptionsEnricher`
+10. `DependencyReasoningEnricher`
+11. `CausalDependencyEnricher`
+12. `RecommendedActionsEnricher`
+13. `SimulationReadinessEnricher`
 
 ## 4. Fachliche Abhaengigkeiten der Enricher
 
@@ -193,6 +197,8 @@ Diese Ergebnisse verbessern nachgelagerte Enricher.
 ### 4.3 Abgeleitete Enricher
 
 - `failure_impact` nutzt u. a. Semantik, Criticality, Area und Automationsbezug.
+- `capability_mapping` erzeugt explizite `PROVIDES_CAPABILITY`-Beziehungen
+  zwischen Entities und `Capability`-Knoten.
 - `semantic_descriptions` nutzt vorhandenen semantischen Kontext fuer beschreibende Texte.
 - `dependency_reasoning` erkennt Beziehungen zwischen Entities.
 - `causal_dependency` leitet Kausalketten aus Faehigkeiten, Zeitdaten, Incidents

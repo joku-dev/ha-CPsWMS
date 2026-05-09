@@ -30,6 +30,7 @@ gelaufen sind:
 
 - `semantic_roles`: Rollen, Kategorien und Kritikalitaet
 - `failure_impact`: betroffene Capabilities und operative Folgen
+- `capability_mapping`: explizite `PROVIDES_CAPABILITY`-Beziehungen
 - `temporal_event_model`: Timeline Events, State Transitions und Incidents
 - `causal_dependency`: `CAUSES`, `DEPENDS_ON`, `IMPACTS`, `DEGRADES`, `RECOVERS`
 - `simulation_readiness`: Bewertung, ob ein Szenario simulierbar ist
@@ -159,6 +160,7 @@ sind sie kausal verbunden, und gibt es schon Simulation-Readiness-Szenarien dazu
 Genutzte Graph-Elemente:
 
 - `Capability`
+- `PROVIDES_CAPABILITY`
 - `DEPENDS_ON`, `IMPACTS`, `DEGRADES`, `RECOVERS`, `CAUSES`
 - `SimulationScenario`
 - `HAS_SIMULATION_READINESS`
@@ -170,6 +172,15 @@ Typische Antwortstruktur:
   "capabilities": [
     {
       "capability": "lighting",
+      "providers": [
+        {
+          "entity_id": "light.flur",
+          "friendly_name": "Flur Licht",
+          "provides_level": "primary",
+          "confidence": 0.91,
+          "reason": "Light entity directly provides lighting."
+        }
+      ],
       "inbound_dependency_count": 3,
       "outbound_dependency_count": 0,
       "simulation_readiness": [
@@ -188,12 +199,13 @@ Typische Antwortstruktur:
 Interpretation:
 
 - `capability`: Name der modellierten Faehigkeit, z. B. `lighting`.
+- `providers`: Entities, die diese Capability ueber `PROVIDES_CAPABILITY` bereitstellen.
 - `inbound_dependency_count`: wie viele Quellen auf diese Capability wirken.
 - `outbound_dependency_count`: wie viele weitere Ziele von dieser Capability ausgehen.
 - `simulation_readiness`: vorhandene Readiness-Bewertungen fuer passende Szenarien.
 
 Wenn `capabilities` leer ist, sind wahrscheinlich noch keine `Capability`-Knoten
-durch `failure_impact` oder `causal_dependency` entstanden.
+durch `capability_mapping` oder `causal_dependency` entstanden.
 
 ### Simulation Readiness
 
@@ -358,7 +370,8 @@ Zeigt Entities und Automationen, die mit einer Capability wie `lighting`,
 `presence_detection` oder `climate_control` verbunden sind.
 
 Diese Query nutzt die vom `failure_impact`-Enricher geschriebenen
-`affected_capability`-Felder sowie kausale Links auf `Capability`-Knoten.
+`affected_capability`-Felder, explizite `PROVIDES_CAPABILITY`-Beziehungen sowie
+kausale Links auf `Capability`-Knoten.
 
 Sie beantwortet: Welche Entities und Automationen haengen an einer Faehigkeit,
 und welche operativen Folgen wurden bereits erkannt?
@@ -375,6 +388,8 @@ Beispielantwort:
       "friendly_name": "Flur Bewegung",
       "state": "unavailable",
       "criticality": "high",
+      "provides_level": "primary",
+      "provides_confidence": 0.88,
       "operational_consequence": "Motion based lighting may not trigger.",
       "causal_sources": [
         {
@@ -399,7 +414,8 @@ Beispielantwort:
 Interpretation:
 
 - Diese Query ist gut fuer fachliche Fragen wie "Welche Funktion faellt aus?"
-- Sie arbeitet ueber `affected_capability` aus `HAS_FAILURE_IMPACT` und Kausal-Links.
+- Sie arbeitet bevorzugt ueber `PROVIDES_CAPABILITY` und nutzt `affected_capability`
+  aus `HAS_FAILURE_IMPACT` als Fallback.
 - Wenn sie leer ist, fehlt meist ein sauberes Capability Mapping.
 
 ### Entity Impact
@@ -441,6 +457,14 @@ Beispielantwort:
   "semantic_role": "motion_sensor",
   "semantic_category": "presence",
   "criticality": "high",
+  "provided_capabilities": [
+    {
+      "capability": "presence_detection",
+      "provides_level": "primary",
+      "confidence": 0.88,
+      "reason": "Motion sensor directly provides presence detection."
+    }
+  ],
   "failure_impacts": [
     {
       "level": "medium",
@@ -486,6 +510,7 @@ Beispielantwort:
 Interpretation:
 
 - `failure_impacts` beantwortet, welche Faehigkeit betroffen ist.
+- `provided_capabilities` zeigt, welche Faehigkeiten die Entity bereitstellt.
 - `incidents` und `timeline_events` erklaeren den zeitlichen Kontext.
 - `causal_links` zeigt, wie die Entity in Kausalketten eingebunden ist.
 - `automations` zeigt direkte Automation-Abhaengigkeiten.
@@ -554,8 +579,8 @@ Diese Abfrage ist passend fuer Debugging:
 curl -s http://localhost:8080/api/capabilities | jq
 ```
 
-Wenn wichtige Capabilities fehlen, sollte zuerst `failure_impact` und danach
-`causal_dependency` erneut laufen.
+Wenn wichtige Capabilities fehlen, sollte zuerst `failure_impact`, danach
+`capability_mapping` und anschliessend `causal_dependency` erneut laufen.
 
 ## Nutzung aus Python
 
@@ -599,6 +624,7 @@ Das ist nicht automatisch ein API-Fehler. Haeufige Ursachen:
 
 - Der passende Enricher ist noch nicht gelaufen.
 - Es gibt noch keine `Capability`-Knoten.
+- `capability_mapping` hat noch keine `PROVIDES_CAPABILITY`-Beziehungen erzeugt.
 - `simulation_readiness` hat noch keine Szenarien bewertet.
 - Die abgefragte Integration oder Entity heisst anders als erwartet.
 

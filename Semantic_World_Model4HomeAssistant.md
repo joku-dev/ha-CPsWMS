@@ -116,10 +116,9 @@ eine Capability ermoeglichen.
 Beispiel:
 
 ```text
-binary_sensor.flur_motion
-automation.flur_licht_bewegung
-light.flur
-→ lighting
+binary_sensor.flur_motion -[:PROVIDES_CAPABILITY]-> presence_detection
+light.flur -[:PROVIDES_CAPABILITY]-> lighting
+climate.wohnzimmer -[:PROVIDES_CAPABILITY]-> climate_control
 ```
 
 Diese Ebene beantwortet:
@@ -127,6 +126,15 @@ Diese Ebene beantwortet:
 - Welche Funktionen hat das Haus?
 - Welche Entities tragen zu welcher Funktion bei?
 - Welche Funktion wird degradiert, wenn ein Objekt ausfaellt?
+
+Im Graph wird dieses Capability Mapping explizit gespeichert:
+
+```text
+(Entity)-[:PROVIDES_CAPABILITY]->(Capability)
+```
+
+Damit ist klar unterscheidbar, ob eine Entity eine Faehigkeit bereitstellt oder
+ob sie eine Faehigkeit nur im Fehlerfall beeinflusst.
 
 ### 4. Zeitmodell
 

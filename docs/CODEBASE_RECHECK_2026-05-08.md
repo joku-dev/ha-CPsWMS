@@ -18,9 +18,12 @@ Die Enrichment-Struktur wurde vereinheitlicht.
 5. `anomaly_detection`
 6. `temporal_event_model`
 7. `failure_impact`
-8. `semantic_descriptions`
-9. `dependency_reasoning`
-10. `recommended_actions`
+8. `capability_mapping`
+9. `semantic_descriptions`
+10. `dependency_reasoning`
+11. `causal_dependency`
+12. `recommended_actions`
+13. `simulation_readiness`
 
 ## Validierung
 
