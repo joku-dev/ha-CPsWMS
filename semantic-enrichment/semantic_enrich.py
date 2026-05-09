@@ -3,10 +3,14 @@ import time
 
 from config import SLEEP_SECONDS
 from enrichers.semantic_roles import SemanticRolesEnricher
+from enrichers.automation_intent import AutomationIntentEnricher
+from enrichers.fault_analysis import FaultAnalysisEnricher
+from enrichers.anomaly_detection import AnomalyDetectionEnricher
+from enrichers.room_inference import RoomInferenceEnricher
 from enrichers.semantic_descriptions import SemanticDescriptionsEnricher
 from enrichers.failure_impact import FailureImpactEnricher
 from enrichers.recommended_actions import RecommendedActionsEnricher
-
+from enrichers.dependency_reasoning import DependencyReasoningEnricher
 
 def wait_for_neo4j(enricher, retries=30, delay=5):
     for attempt in range(1, retries + 1):
@@ -26,9 +30,22 @@ def main():
     print("Semantic enrichment orchestrator started.")
 
     enrichers = [
+        # Basis-Semantik zuerst, damit Folge-Enricher auf Rollen/Kategorien aufbauen koennen.
         SemanticRolesEnricher(),
-        SemanticDescriptionsEnricher(),
+        # Raumableitung frueh, weil Area-Kontext fuer spaetere Analysen hilfreich ist.
+        RoomInferenceEnricher(),
+
+        # Analyse von Automationen und Problemzuständen.
+        AutomationIntentEnricher(),
+        FaultAnalysisEnricher(),
+        AnomalyDetectionEnricher(),
+
+        # Abgeleitete, hoehere Analysen auf Basis vorheriger Ergebnisse.
         FailureImpactEnricher(),
+        SemanticDescriptionsEnricher(),
+        DependencyReasoningEnricher(),
+
+        # Empfohlene Aktionen zuletzt, da sie auf mehreren Voranalysen basieren.
         RecommendedActionsEnricher(),
     ]
 

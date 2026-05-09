@@ -1,11 +1,10 @@
 """Semantic role enrichment for Home Assistant entities."""
 
+from config import OPENAI_MODEL
 from enrichers.base import BaseEnricher
 
 
 class SemanticRolesEnricher(BaseEnricher):
-    """Classify entities into role/category/criticality dimensions."""
-
     name = "semantic_roles"
     prompt_file = "semantic_roles.md"
     schema_file = "semantic_roles_schema.json"
@@ -34,8 +33,7 @@ class SemanticRolesEnricher(BaseEnricher):
     def get_candidates(self, limit):
         query = """
         MATCH (e:Entity)
-        WHERE e.semantic_enriched IS NULL
-           OR e.semantic_enriched = false
+        WHERE coalesce(e.semantic_enriched, false) = false
         RETURN
             e.entity_id AS entity_id,
             e.friendly_name AS friendly_name,
@@ -53,18 +51,12 @@ class SemanticRolesEnricher(BaseEnricher):
 
     def validate_items(self, llm_items, input_items):
         allowed_ids = {item["entity_id"] for item in input_items}
-        valid = []
 
-        for item in llm_items:
-            if item.get("entity_id") not in allowed_ids:
-                continue
-
-            if not self.validate_confidence(item):
-                continue
-
-            valid.append(item)
-
-        return valid
+        return [
+            item
+            for item in llm_items
+            if item.get("entity_id") in allowed_ids and self.validate_confidence(item)
+        ]
 
     def write_results(self, items):
         query = """
@@ -90,10 +82,25 @@ class SemanticRolesEnricher(BaseEnricher):
             r3.source = "openai",
             r3.updated_at = datetime()
 
+        CREATE (event:SemanticEnrichmentEvent {
+            event_id: randomUUID(),
+            enricher: "semantic_roles",
+            model: $model,
+            source: "openai",
+            confidence: $confidence,
+            reason: $reason,
+            created_at: datetime()
+        })
+
+        MERGE (e)-[:GENERATED_BY]->(event)
+        MERGE (event)-[:GENERATED_ROLE]->(role)
+        MERGE (event)-[:GENERATED_CATEGORY]->(category)
+        MERGE (event)-[:GENERATED_CRITICALITY]->(criticality)
+
         SET e.semantic_enriched = true,
             e.semantic_enriched_at = datetime()
         """
 
         with self.driver.session() as session:
             for item in items:
-                session.run(query, **item)
+                session.run(query, model=OPENAI_MODEL, **item)
