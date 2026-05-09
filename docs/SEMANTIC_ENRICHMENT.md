@@ -19,7 +19,9 @@ Aktiv im Orchestrator (`semantic_enrich.py`):
 7. `FailureImpactEnricher`
 8. `SemanticDescriptionsEnricher`
 9. `DependencyReasoningEnricher`
-10. `RecommendedActionsEnricher`
+10. `CausalDependencyEnricher`
+11. `RecommendedActionsEnricher`
+12. `SimulationReadinessEnricher`
 
 ## Architektur in der Komponente
 
@@ -58,9 +60,11 @@ Detailstatus: `semantic-enrichment/enrichers/README.md`
 - `HAS_OBSERVATION`, `HAS_TIMELINE_EVENT`, `HAS_STATE_TRANSITION`, `HAS_INCIDENT`
 - `INFERRED_LOCATION`
 - `SEMANTICALLY_RELATED_TO`
+- `CAUSES`, `DEPENDS_ON`, `IMPACTS`, `DEGRADES`, `RECOVERS`
 - `HAS_FAILURE_IMPACT`
 - `HAS_SEMANTIC_DESCRIPTION`
 - `HAS_RECOMMENDED_ACTION`
+- `HAS_SIMULATION_READINESS`, `EVALUATES_TARGET`
 
 ## Betrieb
 

@@ -145,11 +145,16 @@ Diese Ergebnisse verbessern nachgelagerte Enricher.
 - `failure_impact` nutzt u. a. Semantik, Criticality, Area und Automationsbezug.
 - `semantic_descriptions` nutzt vorhandenen semantischen Kontext fuer beschreibende Texte.
 - `dependency_reasoning` erkennt Beziehungen zwischen Entities.
+- `causal_dependency` leitet Kausalketten aus Faehigkeiten, Zeitdaten, Incidents
+  und Automationsbeziehungen ab.
 
 ### 4.4 Abschluss-Enricher
 
-- `recommended_actions` laeuft zuletzt, da es mehrere Voranalysen konsolidiert
+- `recommended_actions` konsolidiert mehrere Voranalysen
   (z. B. Anomalien, Faults, Failure Impact, temporales Ereignismodell).
+- `simulation_readiness` ist die spaeteste Schicht und bewertet, ob fuer
+  Was-waere-wenn-Simulationen genug Faehigkeiten, Dependencies,
+  Fehlerhistorie, Automationsbeziehungen und kritische Entities vorhanden sind.
 
 ## 5. Daten- und Dateiabhaengigkeiten
 

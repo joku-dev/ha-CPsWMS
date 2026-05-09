@@ -15,6 +15,8 @@ from enrichers.semantic_descriptions import SemanticDescriptionsEnricher
 from enrichers.failure_impact import FailureImpactEnricher
 from enrichers.recommended_actions import RecommendedActionsEnricher
 from enrichers.dependency_reasoning import DependencyReasoningEnricher
+from enrichers.causal_dependency import CausalDependencyEnricher
+from enrichers.simulation_readiness import SimulationReadinessEnricher
 
 
 def wait_for_neo4j(enricher, retries=30, delay=5):
@@ -52,9 +54,12 @@ def main():
         FailureImpactEnricher(),
         SemanticDescriptionsEnricher(),
         DependencyReasoningEnricher(),
+        CausalDependencyEnricher(),
 
-        # Empfohlene Aktionen zuletzt, da sie auf mehreren Voranalysen basieren.
+        # Empfohlene Aktionen konsolidieren mehrere Voranalysen.
         RecommendedActionsEnricher(),
+        # Simulation Readiness ist die spaeteste Schicht und bewertet Graph-Abdeckung.
+        SimulationReadinessEnricher(),
     ]
 
     wait_for_neo4j(enrichers[0])

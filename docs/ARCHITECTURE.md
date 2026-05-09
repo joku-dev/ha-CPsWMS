@@ -7,6 +7,7 @@ Dieses Repository implementiert eine Pipeline von Home Assistant nach Neo4j mit 
 1. `neo4j`
 2. `ha-sync`
 3. `semantic-enrichment`
+4. `query-api`
 
 ## Datenfluss
 
@@ -15,6 +16,7 @@ Dieses Repository implementiert eine Pipeline von Home Assistant nach Neo4j mit 
 3. `semantic-enrichment` liest Kandidaten aus Neo4j.
 4. OpenAI liefert schema-validierte semantische Ergebnisse.
 5. `semantic-enrichment` persistiert neue Relationen/Knoten in Neo4j.
+6. `query-api` stellt vorbereitete HTTP-Abfragen fuer What-if- und Impact-Fragen bereit.
 
 ## Diagramm
 
@@ -24,6 +26,7 @@ flowchart LR
   Sync[ha-sync]
   Neo4j[(Neo4j)]
   Enrich[semantic-enrichment]
+  Query[query-api]
   OpenAI[OpenAI API]
 
   HA -->|REST + WebSocket| Sync
@@ -32,6 +35,7 @@ flowchart LR
   Enrich -->|Structured Output Request| OpenAI
   OpenAI -->|JSON by Schema| Enrich
   Enrich -->|Bolt Write| Neo4j
+  Query -->|Bolt Read| Neo4j
 ```
 
 ## `ha-sync` Verantwortung
@@ -54,9 +58,17 @@ Aktive Enricher:
 7. `failure_impact`
 8. `semantic_descriptions`
 9. `dependency_reasoning`
-10. `recommended_actions`
+10. `causal_dependency`
+11. `recommended_actions`
+12. `simulation_readiness`
 
 Die Komponente nutzt einen gemeinsamen Basistyp (`enrichers/base.py`) mit einheitlichem Kontrollfluss: Kandidaten lesen, LLM aufrufen, Ergebnis validieren, Graph schreiben.
+
+## `query-api` Verantwortung
+
+- Bereitstellen stabiler HTTP-Endpunkte fuer wiederkehrende Graph-Fragen
+- Kapseln von Cypher fuer Capabilities, Simulation Readiness, What-if-Szenarien und Entity Impact
+- Read-only-Zugriff auf Neo4j ueber den Bolt-Treiber
 
 ## Persistenz und Betrieb
 
