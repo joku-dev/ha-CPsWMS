@@ -1,0 +1,44 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "automation_intents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "automation_id": { "type": "string" },
+          "intent": {
+            "type": "string",
+            "enum": [
+              "comfort",
+              "security",
+              "energy_saving",
+              "notification",
+              "maintenance",
+              "presence_based_control",
+              "climate_control",
+              "lighting_control",
+              "safety",
+              "unknown"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": { "type": "string" }
+        },
+        "required": [
+          "automation_id",
+          "intent",
+          "confidence",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": ["automation_intents"]
+}

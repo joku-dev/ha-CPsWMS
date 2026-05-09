@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "room_inferences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity_id": { "type": "string" },
+          "suggested_area": { "type": "string" },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": { "type": "string" }
+        },
+        "required": [
+          "entity_id",
+          "suggested_area",
+          "confidence",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": ["room_inferences"]
+}

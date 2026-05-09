@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate-ubuntu:
+    runs-on: ubuntu-latest
+    env:
+      HA_URL: http://127.0.0.1:8123
+      HA_TOKEN: ci_dummy_token
+      NEO4J_URI: bolt://127.0.0.1:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ci_dummy_password
+      OPENAI_API_KEY: ci_dummy_openai_key
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ha-sync/requirements.txt
+          pip install -r semantic-enrichment/requirements.txt
+
+      - name: Python syntax checks
+        run: |
+          python -m compileall -q ha-sync semantic-enrichment scripts
+
+      - name: Validate enrichment wiring
+        run: |
+          python scripts/ci_validate_enrichment.py
+
+      - name: Import smoke test
+        run: |
+          cd semantic-enrichment
+          PYTHONPATH=. python - <<'PY'
+          import importlib
+
+          modules = [
+              "semantic_enrich",
+              "enrichers.base",
+              "enrichers.semantic_roles",
+              "enrichers.automation_intent",
+              "enrichers.fault_analysis",
+              "enrichers.anomaly_detection",
+              "enrichers.room_inference",
+              "enrichers.dependency_reasoning",
+              "enrichers.failure_impact",
+              "enrichers.semantic_descriptions",
+              "enrichers.recommended_actions",
+          ]
+
+          for module_name in modules:
+              importlib.import_module(module_name)
+              print(f"Imported: {module_name}")
+          PY
+
+      - name: Validate Docker Compose
+        run: |
+          docker compose -f docker-compose.yml config > /tmp/compose-config.txt
+          test -s /tmp/compose-config.txt
+
+  validate-debian:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:12-slim
+    env:
+      HA_URL: http://127.0.0.1:8123
+      HA_TOKEN: ci_dummy_token
+      NEO4J_URI: bolt://127.0.0.1:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ci_dummy_password
+      OPENAI_API_KEY: ci_dummy_openai_key
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --break-system-packages --upgrade pip
+          python3 -m pip install --break-system-packages -r ha-sync/requirements.txt
+          python3 -m pip install --break-system-packages -r semantic-enrichment/requirements.txt
+
+      - name: Python syntax checks
+        run: |
+          python3 -m compileall -q ha-sync semantic-enrichment scripts
+
+      - name: Validate enrichment wiring
+        run: |
+          python3 scripts/ci_validate_enrichment.py
+
+      - name: Import smoke test
+        run: |
+          cd semantic-enrichment
+          PYTHONPATH=. python3 - <<'PY'
+          import importlib
+
+          modules = [
+              "semantic_enrich",
+              "enrichers.base",
+              "enrichers.semantic_roles",
+              "enrichers.automation_intent",
+              "enrichers.fault_analysis",
+              "enrichers.anomaly_detection",
+              "enrichers.room_inference",
+              "enrichers.dependency_reasoning",
+              "enrichers.failure_impact",
+              "enrichers.semantic_descriptions",
+              "enrichers.recommended_actions",
+          ]
+
+          for module_name in modules:
+              importlib.import_module(module_name)
+              print(f"Imported: {module_name}")
+          PY

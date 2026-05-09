@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "semantic_descriptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity_id": { "type": "string" },
+          "short_description": { "type": "string" },
+          "technical_context": { "type": "string" },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": { "type": "string" }
+        },
+        "required": [
+          "entity_id",
+          "short_description",
+          "technical_context",
+          "confidence",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": ["semantic_descriptions"]
+}

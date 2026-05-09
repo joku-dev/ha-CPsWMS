@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_entity_id": { "type": "string" },
+          "target_entity_id": { "type": "string" },
+          "relationship_type": {
+            "type": "string",
+            "enum": [
+              "depends_on",
+              "controls",
+              "triggers",
+              "monitors",
+              "reports_to",
+              "located_near",
+              "functionally_related_to",
+              "unknown"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": { "type": "string" }
+        },
+        "required": [
+          "source_entity_id",
+          "target_entity_id",
+          "relationship_type",
+          "confidence",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": ["relationships"]
+}
+
+

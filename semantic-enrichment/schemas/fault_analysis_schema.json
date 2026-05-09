@@ -1,0 +1,48 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "faults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity_id": { "type": "string" },
+          "fault_type": {
+            "type": "string",
+            "enum": [
+              "unavailable_entity",
+              "unknown_state",
+              "stale_entity",
+              "network_related",
+              "battery_related",
+              "integration_related",
+              "sensor_failure",
+              "device_failure",
+              "unknown"
+            ]
+          },
+          "impact": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical", "unknown"]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": { "type": "string" }
+        },
+        "required": [
+          "entity_id",
+          "fault_type",
+          "impact",
+          "confidence",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": ["faults"]
+}

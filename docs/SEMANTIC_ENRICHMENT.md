@@ -1,66 +1,75 @@
 # Semantic Enrichment
 
-Die `semantic-enrichment`-Komponente erweitert die Home Assistant Entities in Neo4j mit semantischen Informationen, die über OpenAI generiert werden.
+Die Komponente `semantic-enrichment` erweitert Home-Assistant-Daten in Neo4j mit LLM-basierten semantischen Beziehungen.
 
-## Zweck
+## Ziel
 
-Nach der Synchronisation von Home Assistant Entities nach Neo4j können diese Entities weiter angereichert werden:
+Nach dem Roh-Sync (`ha-sync`) werden Entities und Automationen in spezialisierten Enrichern bewertet. Das Ergebnis sind zusaetzliche Knoten, Relationen und Diagnosehinweise im Graph.
 
-1. **Semantische Rollen**: Klassifizierung der Entities (z. B. Sensor, Aktor, Schalter)
-2. **Semantische Kategorien**: Kategorisierung nach Funktion (z. B. Temperatur, Licht, Heizung)
-3. **Criticality Level**: Einstufung nach Wichtigkeit (z. B. kritisch, hoch, normal)
+## Aktueller Stand
 
-## Komponenten
+Aktiv im Orchestrator (`semantic_enrich.py`):
 
-- `semantic_enrich.py`: Hauptskript, das Entities abruft und mit OpenAI anreichert
-- `prompts/semantic_roles.md`: System-Prompt für OpenAI mit Anweisungen
-- `schemas/enrichment_schema.json`: JSON-Schema für die erwarteten Antworten
+1. `SemanticRolesEnricher`
+2. `AutomationIntentEnricher`
+3. `FaultAnalysisEnricher`
+4. `AnomalyDetectionEnricher`
+5. `RoomInferenceEnricher`
+6. `DependencyReasoningEnricher`
+7. `FailureImpactEnricher`
+8. `SemanticDescriptionsEnricher`
+9. `RecommendedActionsEnricher`
 
-## Workflow
+## Architektur in der Komponente
 
-1. `semantic_enrich.py` startet beim Container-Start
-2. Ruft Entities ab, die noch nicht angereichert wurden (`semantic_enriched = false`)
-3. Sendet diese in Batches an OpenAI mit einem definierten System-Prompt
-4. Speichert die Antworten als neue Knoten und Beziehungen in Neo4j:
-   - `SemanticRole` Knoten
-   - `SemanticCategory` Knoten
-   - `Criticality` Knoten
-   - Beziehungen wie `HAS_ROLE`, `IN_CATEGORY`, `HAS_CRITICALITY`
+- `semantic_enrich.py`: Orchestriert alle Enricher in einem Endlos-Loop
+- `enrichers/base.py`: Gemeinsamer Workflow (Kandidaten lesen, LLM aufrufen, validieren, schreiben)
+- `enrichers/*.py`: konkrete Enricher-Implementierungen
+- `config.py`: Umgebungsvariablen und Pfadkonfiguration
+- `prompts/*.md`: System-Prompts pro Enricher
+- `schemas/*.json`: JSON-Schemas fuer strukturierte LLM-Antworten
 
-## Umgebungsvariablen
+Detailstatus: `semantic-enrichment/enrichers/README.md`
 
-- `OPENAI_API_KEY`: OpenAI API Key (erforderlich)
-- `NEO4J_URI`: Neo4j Bolt-URI (Standard: `bolt://neo4j:7687`)
-- `NEO4J_USER`: Neo4j Benutzer (Standard: `neo4j`)
-- `NEO4J_PASSWORD`: Neo4j Passwort (erforderlich)
-- `OPENAI_MODEL`: Verwendetes OpenAI-Modell (Standard: `gpt-5.5`)
-- `BATCH_SIZE`: Anzahl der Entities pro API-Aufruf (Standard: `20`)
-- `SLEEP_SECONDS`: Wartezeit zwischen Sync-Durchläufen (Standard: `300`)
-- `MIN_CONFIDENCE`: Minimales Confidence-Level für Antworten (Standard: `0.50`)
+## Laufablauf pro Enricher
 
-## Abhängigkeiten
+1. `setup()` legt benoetigte Constraints an (falls definiert).
+2. `get_candidates(limit)` liest einen Batch aus Neo4j.
+3. `call_llm(payload)` ruft OpenAI mit Prompt + JSON-Schema auf.
+4. `validate_items(...)` filtert ungueltige IDs und zu niedrige Confidence.
+5. `write_results(items)` schreibt Relationen/Knoten nach Neo4j.
 
-- `openai`: OpenAI Python Client
-- `neo4j`: Neo4j Python Driver
+## Wichtige Umgebungsvariablen
 
-## Constraints
+- `OPENAI_API_KEY` (erforderlich)
+- `OPENAI_MODEL` (Standard: `gpt-5.5`)
+- `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` (erforderlich)
+- `BATCH_SIZE` (Standard: `20`)
+- `SLEEP_SECONDS` (Standard: `300`)
+- `MIN_CONFIDENCE` (Standard: `0.5`)
 
-Das System erstellt automatisch folgende Neo4j Constraints:
+## Von den aktiven Enrichern erzeugte Relationen
 
-- `SemanticRole.name` unique
-- `SemanticCategory.name` unique
-- `Criticality.level` unique
+- `HAS_SEMANTIC_ROLE`, `HAS_SEMANTIC_CATEGORY`, `HAS_CRITICALITY`
+- `HAS_AUTOMATION_INTENT`
+- `HAS_FAULT_ANALYSIS`
+- `HAS_ANOMALY`
+- `INFERRED_LOCATION`
+- `SEMANTICALLY_RELATED_TO`
+- `HAS_FAILURE_IMPACT`
+- `HAS_SEMANTIC_DESCRIPTION`
+- `HAS_RECOMMENDED_ACTION`
 
-Dies verhindert doppelte Knoten bei wiederholtem Enrichment.
+## Betrieb
 
-## Fehlerhandling
+Container starten:
 
-- Das System überspringt Entities, die nicht als JSON erkannt werden
-- Falls OpenAI nicht erreichbar ist, wird die Anfrage wiederholt
-- Batches werden in regelmäßigen Abständen verarbeitet
+```bash
+docker compose up -d --build semantic-enrichment
+```
 
-## Erweiterungen
+Logs:
 
-- Weitere Enrichment-Kriterien können in `prompts/semantic_roles.md` hinzugefügt werden
-- Das Schema in `schemas/enrichment_schema.json` kann erweitert werden
-- Benutzerdefinierte Kategorien können in der Prompt definiert werden
+```bash
+docker compose logs -f semantic-enrichment
+```

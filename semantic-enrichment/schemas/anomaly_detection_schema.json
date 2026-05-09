@@ -1,0 +1,47 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "anomalies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity_id": { "type": "string" },
+          "anomaly_type": {
+            "type": "string",
+            "enum": [
+              "unavailable_entity",
+              "frequent_state_change",
+              "stale_sensor",
+              "unexpected_state",
+              "automation_loop",
+              "network_issue",
+              "battery_issue",
+              "unknown"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical", "unknown"]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": { "type": "string" }
+        },
+        "required": [
+          "entity_id",
+          "anomaly_type",
+          "severity",
+          "confidence",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": ["anomalies"]
+}
