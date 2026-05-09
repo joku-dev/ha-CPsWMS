@@ -166,6 +166,7 @@ curl http://localhost:8080/api/entities/binary_sensor.motion/impact
 
 - `docs/ARCHITECTURE.md`
 - `docs/DEPLOYMENT.md`
+- `docs/QUERY_API.md`
 - `docs/SEMANTIC_ENRICHMENT.md`
 - `docs/FAQ.md`
 - `docs/CODEBASE_RECHECK_2026-05-08.md`

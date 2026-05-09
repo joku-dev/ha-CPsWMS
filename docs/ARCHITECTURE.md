@@ -70,6 +70,8 @@ Die Komponente nutzt einen gemeinsamen Basistyp (`enrichers/base.py`) mit einhei
 - Kapseln von Cypher fuer Capabilities, Simulation Readiness, What-if-Szenarien und Entity Impact
 - Read-only-Zugriff auf Neo4j ueber den Bolt-Treiber
 
+Details zur Funktionsweise und zu den Endpoints: `docs/QUERY_API.md`
+
 ## Persistenz und Betrieb
 
 - Persistenz: `neo4j/data`
