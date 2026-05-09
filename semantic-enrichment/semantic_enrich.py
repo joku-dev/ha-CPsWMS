@@ -9,6 +9,7 @@ from enrichers.semantic_roles import SemanticRolesEnricher
 from enrichers.automation_intent import AutomationIntentEnricher
 from enrichers.fault_analysis import FaultAnalysisEnricher
 from enrichers.anomaly_detection import AnomalyDetectionEnricher
+from enrichers.temporal_event_model import TemporalEventModelEnricher
 from enrichers.room_inference import RoomInferenceEnricher
 from enrichers.semantic_descriptions import SemanticDescriptionsEnricher
 from enrichers.failure_impact import FailureImpactEnricher
@@ -45,6 +46,7 @@ def main():
         AutomationIntentEnricher(),
         FaultAnalysisEnricher(),
         AnomalyDetectionEnricher(),
+        TemporalEventModelEnricher(),
 
         # Abgeleitete, hoehere Analysen auf Basis vorheriger Ergebnisse.
         FailureImpactEnricher(),

@@ -46,17 +46,18 @@ Neo4j Browser: `http://localhost:7474`
 
 ## 5. Aktive Enricher verifizieren
 
-Der Runtime-Orchestrator `semantic-enrichment/semantic_enrich.py` fuehrt folgende 9 Enricher aus:
+Der Runtime-Orchestrator `semantic-enrichment/semantic_enrich.py` fuehrt folgende 10 Enricher aus:
 
 1. `semantic_roles`
 2. `room_inference`
 3. `automation_intent`
 4. `fault_analysis`
 5. `anomaly_detection`
-6. `failure_impact`
-7. `semantic_descriptions`
-8. `dependency_reasoning`
-9. `recommended_actions`
+6. `temporal_event_model`
+7. `failure_impact`
+8. `semantic_descriptions`
+9. `dependency_reasoning`
+10. `recommended_actions`
 
 Im Container-Log sollten pro Zyklus Eintraege wie `Running enricher: <name>` fuer diese Enricher erscheinen.
 
@@ -85,6 +86,30 @@ RETURN count(r) AS semantic_description_links;
 MATCH (:Entity)-[r:HAS_RECOMMENDED_ACTION]->(:RecommendedActionType)
 RETURN count(r) AS recommended_action_links;
 ```
+
+Temporal Event Model (Detailchecks):
+
+```cypher
+MATCH (:Entity)-[r:HAS_OBSERVATION]->(:Observation)
+RETURN count(r) AS has_observation_links;
+```
+
+```cypher
+MATCH (:Entity)-[r:HAS_TIMELINE_EVENT]->(:TimelineEvent)
+RETURN count(r) AS has_timeline_event_links;
+```
+
+```cypher
+MATCH (:Entity)-[r:HAS_STATE_TRANSITION]->(:StateTransition)
+RETURN count(r) AS has_state_transition_links;
+```
+
+```cypher
+MATCH (:Entity)-[r:HAS_INCIDENT]->(:Incident)
+RETURN count(r) AS has_incident_links;
+```
+
+Weitere Live-Queries: `docs/TEMPORAL_EVENT_MODEL_QUERIES.md`
 
 ## 7. Betriebshinweise
 

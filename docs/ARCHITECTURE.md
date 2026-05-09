@@ -50,10 +50,11 @@ Aktive Enricher:
 3. `automation_intent`
 4. `fault_analysis`
 5. `anomaly_detection`
-6. `failure_impact`
-7. `semantic_descriptions`
-8. `dependency_reasoning`
-9. `recommended_actions`
+6. `temporal_event_model`
+7. `failure_impact`
+8. `semantic_descriptions`
+9. `dependency_reasoning`
+10. `recommended_actions`
 
 Die Komponente nutzt einen gemeinsamen Basistyp (`enrichers/base.py`) mit einheitlichem Kontrollfluss: Kandidaten lesen, LLM aufrufen, Ergebnis validieren, Graph schreiben.
 

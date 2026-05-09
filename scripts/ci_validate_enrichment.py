@@ -26,6 +26,7 @@ LEGACY_ROOT_ENRICHERS = [
     "failure_impact.py",
     "semantic_descriptions.py",
     "recommended_actions.py",
+    "temporal_event_model.py",
     "base.py",
 ]
 

@@ -76,10 +76,11 @@ Der Orchestrator `semantic-enrichment/semantic_enrich.py` fuehrt folgende Enrich
 3. `automation_intent`
 4. `fault_analysis`
 5. `anomaly_detection`
-6. `failure_impact`
-7. `semantic_descriptions`
-8. `dependency_reasoning`
-9. `recommended_actions`
+6. `temporal_event_model`
+7. `failure_impact`
+8. `semantic_descriptions`
+9. `dependency_reasoning`
+10. `recommended_actions`
 
 ## Von Enrichment erzeugte Relationen
 
@@ -89,6 +90,10 @@ Der Orchestrator `semantic-enrichment/semantic_enrich.py` fuehrt folgende Enrich
 - `HAS_AUTOMATION_INTENT`
 - `HAS_FAULT_ANALYSIS`
 - `HAS_ANOMALY`
+- `HAS_OBSERVATION`
+- `HAS_TIMELINE_EVENT`
+- `HAS_STATE_TRANSITION`
+- `HAS_INCIDENT`
 - `INFERRED_LOCATION`
 - `SEMANTICALLY_RELATED_TO`
 - `HAS_FAILURE_IMPACT`

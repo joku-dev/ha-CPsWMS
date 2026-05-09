@@ -1,0 +1,95 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "temporal_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entity_id": { "type": "string" },
+          "observation_text": { "type": "string" },
+          "observed_at": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "transition_from": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "transition_to": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "transition_at": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "timeline_event_type": {
+            "type": "string",
+            "enum": [
+              "state_change",
+              "sensor_unavailable",
+              "automation_triggered",
+              "incident",
+              "observation",
+              "unknown"
+            ]
+          },
+          "timeline_summary": { "type": "string" },
+          "timeline_at": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "null" }
+            ]
+          },
+          "incident_type": {
+            "type": "string",
+            "enum": [
+              "unavailable",
+              "automation_issue",
+              "state_instability",
+              "none",
+              "unknown"
+            ]
+          },
+          "incident_severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical", "unknown"]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": { "type": "string" }
+        },
+        "required": [
+          "entity_id",
+          "observation_text",
+          "observed_at",
+          "transition_from",
+          "transition_to",
+          "transition_at",
+          "timeline_event_type",
+          "timeline_summary",
+          "timeline_at",
+          "incident_type",
+          "incident_severity",
+          "confidence",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": ["temporal_events"]
+}

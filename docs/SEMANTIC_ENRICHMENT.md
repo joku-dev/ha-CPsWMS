@@ -15,10 +15,11 @@ Aktiv im Orchestrator (`semantic_enrich.py`):
 3. `AutomationIntentEnricher`
 4. `FaultAnalysisEnricher`
 5. `AnomalyDetectionEnricher`
-6. `FailureImpactEnricher`
-7. `SemanticDescriptionsEnricher`
-8. `DependencyReasoningEnricher`
-9. `RecommendedActionsEnricher`
+6. `TemporalEventModelEnricher`
+7. `FailureImpactEnricher`
+8. `SemanticDescriptionsEnricher`
+9. `DependencyReasoningEnricher`
+10. `RecommendedActionsEnricher`
 
 ## Architektur in der Komponente
 
@@ -54,6 +55,7 @@ Detailstatus: `semantic-enrichment/enrichers/README.md`
 - `HAS_AUTOMATION_INTENT`
 - `HAS_FAULT_ANALYSIS`
 - `HAS_ANOMALY`
+- `HAS_OBSERVATION`, `HAS_TIMELINE_EVENT`, `HAS_STATE_TRANSITION`, `HAS_INCIDENT`
 - `INFERRED_LOCATION`
 - `SEMANTICALLY_RELATED_TO`
 - `HAS_FAILURE_IMPACT`
@@ -73,3 +75,7 @@ Logs:
 ```bash
 docker compose logs -f semantic-enrichment
 ```
+
+Temporal Live-Checks:
+
+- Siehe `docs/TEMPORAL_EVENT_MODEL_QUERIES.md` fuer direkte Neo4j-Browser-Queries zu `Observation`, `StateTransition`, `TimelineEvent` und `Incident`.

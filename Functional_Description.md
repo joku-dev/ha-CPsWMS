@@ -32,16 +32,17 @@ flowchart LR
   E3[automation_intent]
   E4[fault_analysis]
   E5[anomaly_detection]
-  E6[failure_impact]
-  E7[semantic_descriptions]
-  E8[dependency_reasoning]
-  E9[recommended_actions]
+  E6[temporal_event_model]
+  E7[failure_impact]
+  E8[semantic_descriptions]
+  E9[dependency_reasoning]
+  E10[recommended_actions]
 
   HA -->|REST + WebSocket| Sync
   Sync -->|Bolt write| Neo4j
   Neo4j -->|Candidate read| Orch
 
-  Orch --> E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7 --> E8 --> E9
+  Orch --> E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7 --> E8 --> E9 --> E10
 
   E1 -->|LLM request| OpenAI
   E2 -->|LLM request| OpenAI
@@ -52,6 +53,7 @@ flowchart LR
   E7 -->|LLM request| OpenAI
   E8 -->|LLM request| OpenAI
   E9 -->|LLM request| OpenAI
+  E10 -->|LLM request| OpenAI
 
   E1 -->|Graph write| Neo4j
   E2 -->|Graph write| Neo4j
@@ -62,6 +64,7 @@ flowchart LR
   E7 -->|Graph write| Neo4j
   E8 -->|Graph write| Neo4j
   E9 -->|Graph write| Neo4j
+  E10 -->|Graph write| Neo4j
 ```
 
 ## 2. Wichtige Einstiegspunkte
@@ -115,10 +118,11 @@ Die aktuell verdrahtete Reihenfolge in `semantic_enrich.py`:
 3. `AutomationIntentEnricher`
 4. `FaultAnalysisEnricher`
 5. `AnomalyDetectionEnricher`
-6. `FailureImpactEnricher`
-7. `SemanticDescriptionsEnricher`
-8. `DependencyReasoningEnricher`
-9. `RecommendedActionsEnricher`
+6. `TemporalEventModelEnricher`
+7. `FailureImpactEnricher`
+8. `SemanticDescriptionsEnricher`
+9. `DependencyReasoningEnricher`
+10. `RecommendedActionsEnricher`
 
 ## 4. Fachliche Abhaengigkeiten der Enricher
 
@@ -134,6 +138,7 @@ Diese Ergebnisse verbessern nachgelagerte Enricher.
 - `automation_intent` analysiert Automationen.
 - `fault_analysis` analysiert problematische Entities.
 - `anomaly_detection` erkennt Anomalien aus Zustands- und Event-Kontext.
+- `temporal_event_model` erzeugt zeitbezogene Ereignisstrukturen (`Observation`, `StateTransition`, `TimelineEvent`, `Incident`).
 
 ### 4.3 Abgeleitete Enricher
 
@@ -144,7 +149,7 @@ Diese Ergebnisse verbessern nachgelagerte Enricher.
 ### 4.4 Abschluss-Enricher
 
 - `recommended_actions` laeuft zuletzt, da es mehrere Voranalysen konsolidiert
-  (z. B. Anomalien, Faults, Failure Impact).
+  (z. B. Anomalien, Faults, Failure Impact, temporales Ereignismodell).
 
 ## 5. Daten- und Dateiabhaengigkeiten
 
@@ -156,10 +161,10 @@ Jeder Enricher hat drei zentrale statische Angaben:
 
 Beispiel:
 
-- `RecommendedActionsEnricher`
-  - Prompt: `prompts/recommended_actions.md`
-  - Schema: `schemas/recommended_actions_schema.json`
-  - Key: `recommended_actions`
+- `TemporalEventModelEnricher`
+  - Prompt: `prompts/temporal_event_model.md`
+  - Schema: `schemas/temporal_event_model_schema.json`
+  - Key: `temporal_events`
 
 Wenn Prompt/Schema nicht existieren oder nicht zum `response_key` passen,
 schlaegt der Lauf zur Laufzeit fehl.
