@@ -202,6 +202,7 @@ FastAPI-Doku:
 - `docs/QUERY_API.md`
 - `docs/SEMANTIC_ENRICHMENT.md`
 - `docs/WORLD_MODEL_CHAT.md`
+- `Semantic_World_Model4HomeAssistant.md`
 - `docs/FAQ.md`
 - `docs/CODEBASE_RECHECK_2026-05-08.md`
 - `Functional_Description.md`
