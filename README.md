@@ -2,6 +2,13 @@
 
 Dieses Projekt synchronisiert Home-Assistant-Daten nach Neo4j und erweitert den Graph anschliessend mit LLM-basierten semantischen Beziehungen.
 
+Kurz gesagt: Dieses Repository baut ein semantisches World Model fuer Home Assistant.
+Es sammelt Entities, Automationen, Integrationen und Ereignisse, modelliert daraus
+Faehigkeiten, Fehlerfolgen, Zeitverlaeufe und Kausalbeziehungen und stellt diese
+Informationen ueber eine Query API sowie eine Chat-Schnittstelle bereit. Ziel ist,
+Fragen wie "Was passiert, wenn Zigbee ausfaellt?" oder "Welche Automation haengt
+an diesem Sensor?" strukturiert aus dem Graph beantworten zu koennen.
+
 ## Komponenten
 
 1. `neo4j`: Graphdatenbank
