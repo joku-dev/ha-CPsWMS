@@ -8,6 +8,7 @@ Dieses Repository implementiert eine Pipeline von Home Assistant nach Neo4j mit 
 2. `ha-sync`
 3. `semantic-enrichment`
 4. `query-api`
+5. `world-model-chat`
 
 ## Datenfluss
 
@@ -17,6 +18,8 @@ Dieses Repository implementiert eine Pipeline von Home Assistant nach Neo4j mit 
 4. OpenAI liefert schema-validierte semantische Ergebnisse.
 5. `semantic-enrichment` persistiert neue Relationen/Knoten in Neo4j.
 6. `query-api` stellt vorbereitete HTTP-Abfragen fuer What-if- und Impact-Fragen bereit.
+7. `world-model-chat` erzeugt aus freien Fragen validierte read-only Cypher-Abfragen
+   und formuliert Antworten aus den Neo4j-Ergebnissen.
 
 ## Diagramm
 
@@ -27,6 +30,7 @@ flowchart LR
   Neo4j[(Neo4j)]
   Enrich[semantic-enrichment]
   Query[query-api]
+  Chat[world-model-chat]
   OpenAI[OpenAI API]
 
   HA -->|REST + WebSocket| Sync
@@ -36,6 +40,9 @@ flowchart LR
   OpenAI -->|JSON by Schema| Enrich
   Enrich -->|Bolt Write| Neo4j
   Query -->|Bolt Read| Neo4j
+  Chat -->|Structured Cypher Request| OpenAI
+  Chat -->|Bolt Read| Neo4j
+  Chat -->|Answer Generation| OpenAI
 ```
 
 ## `ha-sync` Verantwortung
@@ -71,6 +78,16 @@ Die Komponente nutzt einen gemeinsamen Basistyp (`enrichers/base.py`) mit einhei
 - Read-only-Zugriff auf Neo4j ueber den Bolt-Treiber
 
 Details zur Funktionsweise und zu den Endpoints: `docs/QUERY_API.md`
+
+## `world-model-chat` Verantwortung
+
+- Entgegennehmen natuerlichsprachlicher Fragen per `POST /chat`
+- Generieren strukturierter Cypher-Queries mit OpenAI
+- Validieren, dass Queries read-only und limitiert sind
+- Ausfuehren der Query gegen Neo4j
+- Formulieren einer lesbaren Antwort aus Query-Ergebnis und Frage
+
+Details: `docs/WORLD_MODEL_CHAT.md`
 
 ## Persistenz und Betrieb
 

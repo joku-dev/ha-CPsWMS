@@ -4,10 +4,12 @@ Diese Datei beschreibt, wie der Code funktioniert und wie die Abhaengigkeiten im
 
 ## 1. Gesamtueberblick
 
-Das Repository implementiert zwei Haupt-Pipelines:
+Das Repository implementiert zwei Haupt-Pipelines und zwei Abfrageschichten:
 
 1. `ha-sync`: Liest Daten aus Home Assistant und schreibt sie als Graph nach Neo4j.
 2. `semantic-enrichment`: Liest Graph-Kandidaten aus Neo4j und reichert sie mit LLM-basierten Semantiken an.
+3. `query-api`: Stellt feste read-only HTTP-Abfragen fuer What-if-, Impact- und Readiness-Fragen bereit.
+4. `world-model-chat`: Beantwortet freie Fragen mit LLM-generierter, validierter read-only Cypher-Abfrage.
 
 Die zentrale Laufzeitsequenz ist:
 
@@ -16,6 +18,8 @@ Die zentrale Laufzeitsequenz ist:
 3. `semantic-enrichment` -> liest aus Neo4j
 4. `semantic-enrichment` -> OpenAI Responses API
 5. `semantic-enrichment` -> schreibt Ergebnis nach Neo4j
+6. `query-api` -> liest vorbereitete Sichten aus Neo4j
+7. `world-model-chat` -> OpenAI erzeugt Cypher, Neo4j liefert Daten, OpenAI formuliert Antwort
 
 ## 1.1 Architekturdiagramm
 
@@ -25,6 +29,8 @@ flowchart LR
   Sync[ha-sync]
   Neo4j[(Neo4j)]
   Orch[semantic_enrich.py Orchestrator]
+  QueryAPI[query-api]
+  Chat[world-model-chat]
   OpenAI[OpenAI Responses API]
 
   E1[semantic_roles]
@@ -36,13 +42,15 @@ flowchart LR
   E7[failure_impact]
   E8[semantic_descriptions]
   E9[dependency_reasoning]
-  E10[recommended_actions]
+  E10[causal_dependency]
+  E11[recommended_actions]
+  E12[simulation_readiness]
 
   HA -->|REST + WebSocket| Sync
   Sync -->|Bolt write| Neo4j
   Neo4j -->|Candidate read| Orch
 
-  Orch --> E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7 --> E8 --> E9 --> E10
+  Orch --> E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7 --> E8 --> E9 --> E10 --> E11 --> E12
 
   E1 -->|LLM request| OpenAI
   E2 -->|LLM request| OpenAI
@@ -54,6 +62,8 @@ flowchart LR
   E8 -->|LLM request| OpenAI
   E9 -->|LLM request| OpenAI
   E10 -->|LLM request| OpenAI
+  E11 -->|LLM request| OpenAI
+  E12 -->|LLM request| OpenAI
 
   E1 -->|Graph write| Neo4j
   E2 -->|Graph write| Neo4j
@@ -65,6 +75,13 @@ flowchart LR
   E8 -->|Graph write| Neo4j
   E9 -->|Graph write| Neo4j
   E10 -->|Graph write| Neo4j
+  E11 -->|Graph write| Neo4j
+  E12 -->|Graph write| Neo4j
+
+  QueryAPI -->|Bolt read| Neo4j
+  Chat -->|Cypher generation| OpenAI
+  Chat -->|Bolt read| Neo4j
+  Chat -->|Answer generation| OpenAI
 ```
 
 ## 2. Wichtige Einstiegspunkte
@@ -94,6 +111,37 @@ Verantwortung:
 - Initialisiert alle Enricher
 - Fuehrt jeden Enricher zyklisch aus (`while True`)
 
+### 2.3 `query-api/app.py`
+
+Verantwortung:
+
+- Stellt feste read-only HTTP-Endpunkte fuer haeufige Graph-Fragen bereit
+- Kapselt Cypher fuer Capabilities, Simulation Readiness, What-if-Szenarien und Entity Impact
+- Liest ausschliesslich aus Neo4j und schreibt keine Graphdaten
+- Wandelt Neo4j-Datentypen in JSON-kompatible HTTP-Antworten um
+
+Typische Endpunkte:
+
+- `GET /health`
+- `GET /api/capabilities`
+- `GET /api/simulation-readiness`
+- `GET /api/what-if/integration/{domain}`
+- `GET /api/what-if/capability/{name}`
+- `GET /api/entities/{entity_id}/impact`
+
+### 2.4 `world-model-chat/app.py`
+
+Verantwortung:
+
+- Nimmt freie Fragen per `POST /chat` entgegen
+- Laesst OpenAI eine strukturierte Cypher-Abfrage erzeugen
+- Validiert, dass die Query read-only ist, `RETURN` und `LIMIT` enthaelt und keine Schreiboperation nutzt
+- Fuehrt die Query gegen Neo4j aus
+- Laesst OpenAI aus Frage, Query und Ergebnisdaten eine Antwort formulieren
+
+Der Service ist bewusst getrennt von `query-api`: `query-api` ist die stabile Maschinen-API,
+`world-model-chat` ist die flexible Sprachschnittstelle.
+
 ## 3. Enrichment-Architektur
 
 ### 3.1 Basisklasse: `semantic-enrichment/enrichers/base.py`
@@ -122,7 +170,9 @@ Die aktuell verdrahtete Reihenfolge in `semantic_enrich.py`:
 7. `FailureImpactEnricher`
 8. `SemanticDescriptionsEnricher`
 9. `DependencyReasoningEnricher`
-10. `RecommendedActionsEnricher`
+10. `CausalDependencyEnricher`
+11. `RecommendedActionsEnricher`
+12. `SimulationReadinessEnricher`
 
 ## 4. Fachliche Abhaengigkeiten der Enricher
 
@@ -197,6 +247,18 @@ schlaegt der Lauf zur Laufzeit fehl.
 - `neo4j`
 - `python-dotenv`
 
+`query-api/requirements.txt`:
+
+- `neo4j`
+
+`world-model-chat/requirements.txt`:
+
+- `fastapi`
+- `uvicorn[standard]`
+- `neo4j`
+- `openai`
+- `python-dotenv`
+
 ## 7. Konfiguration
 
 Die Enrichment-Konfiguration sitzt in `semantic-enrichment/config.py`.
@@ -217,11 +279,38 @@ Pfadvariablen:
 - `PROMPTS_DIR`
 - `SCHEMAS_DIR`
 
+Die Query-API-Konfiguration sitzt direkt in `query-api/app.py`.
+
+Wichtige Variablen:
+
+- `NEO4J_URI`
+- `NEO4J_USER`
+- `NEO4J_PASSWORD`
+- `QUERY_API_PORT`
+- `QUERY_API_DEFAULT_LIMIT`
+- `QUERY_API_MAX_LIMIT`
+
+Die World-Model-Chat-Konfiguration sitzt in `world-model-chat/config.py`.
+
+Wichtige Variablen:
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `NEO4J_URI`
+- `NEO4J_USER`
+- `NEO4J_PASSWORD`
+- `WORLD_MODEL_CHAT_PORT`
+- `WORLD_MODEL_CHAT_MAX_QUERY_ROWS`
+- `WORLD_MODEL_CHAT_MIN_CYPHER_CONFIDENCE`
+
 ## 8. Laufzeitverhalten und Fehlertoleranz
 
 - Der Orchestrator faengt Exceptions pro Enricher ab.
 - Ein fehlerhafter Enricher stoppt nicht den gesamten Zyklus.
 - Nach jedem vollen Durchlauf wird `SLEEP_SECONDS` gewartet.
+- `query-api` beantwortet nur vorbereitete GET-Abfragen und ist read-only.
+- `world-model-chat` blockiert schreibende oder administrative Cypher-Bestandteile,
+  bevor eine LLM-generierte Query Neo4j erreicht.
 
 ## 9. CI-Absicherung
 
@@ -241,5 +330,7 @@ Das System ist modular aufgebaut:
 
 - `ha-sync` erstellt den operativen Graph.
 - `semantic-enrichment` erweitert ihn in klar getrennten, wiederverwendbaren Enrichern.
+- `query-api` kapselt stabile, vorbereitete Graph-Abfragen.
+- `world-model-chat` erlaubt freie Fragen auf Basis validierter read-only Cypher-Abfragen.
 - `BaseEnricher` sorgt fuer konsistente Ausfuehrung.
 - Die Enricher-Reihenfolge ist bewusst entlang fachlicher Abhaengigkeiten gestaltet.
