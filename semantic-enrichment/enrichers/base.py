@@ -1,6 +1,7 @@
 import json
 import time
 from abc import ABC, abstractmethod
+from datetime import date, datetime, time as datetime_time
 
 from neo4j import GraphDatabase
 from openai import OpenAI
@@ -68,8 +69,39 @@ class BaseEnricher(ABC):
         with open(path, "r", encoding="utf-8") as file:
             return json.load(file)
 
+    def make_json_safe(self, value):
+        """Convert database/client-native values into JSON-compatible values."""
+        if isinstance(value, dict):
+            return {
+                str(key): self.make_json_safe(item)
+                for key, item in value.items()
+            }
+
+        if isinstance(value, (list, tuple, set)):
+            return [self.make_json_safe(item) for item in value]
+
+        if isinstance(value, (datetime, date, datetime_time)):
+            return value.isoformat()
+
+        if hasattr(value, "iso_format"):
+            return value.iso_format()
+
+        if hasattr(value, "to_native"):
+            native_value = value.to_native()
+            if isinstance(native_value, (datetime, date, datetime_time)):
+                return native_value.isoformat()
+            return self.make_json_safe(native_value)
+
+        try:
+            json.dumps(value)
+            return value
+        except TypeError:
+            return str(value)
+
     def call_llm(self, payload):
         """Invoke OpenAI with structured-output schema and parse JSON response."""
+        payload = self.make_json_safe(payload)
+
         print(f"[{self.name}] CALLING OPENAI...")
         print(f"[{self.name}] Model: {OPENAI_MODEL}")
         print(f"[{self.name}] Payload items: {len(payload.get('items', []))}")
