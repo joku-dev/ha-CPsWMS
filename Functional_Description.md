@@ -1,102 +1,403 @@
-# Functional Description
+# Funktionale Beschreibung: HA-CPsWMS
 
-Diese Datei beschreibt, wie der Code funktioniert und wie die Abhaengigkeiten im Projekt aufgebaut sind.
+## Übersicht
 
-## 1. Gesamtueberblick
+HA-CPsWMS (Home Assistant - Canonical Entity Layer + Semantic World Model System) ist ein umfassendes System zur Erstellung eines semantischen Weltmodells für Smart-Home-Umgebungen. Das System transformiert Rohdaten aus Home Assistant in ein intelligentes, abfragbares Modell, das nicht nur technische Fakten speichert, sondern auch semantische Bedeutung, Abhängigkeiten und Kausalzusammenhänge versteht.
 
-Das Repository implementiert zwei Haupt-Pipelines und zwei Abfrageschichten:
+### Kernfunktionalität
 
-1. `ha-sync`: Liest Daten aus Home Assistant und schreibt sie als Graph nach Neo4j.
-2. `semantic-enrichment`: Liest Graph-Kandidaten aus Neo4j und reichert sie mit LLM-basierten Semantiken an.
-3. `query-api`: Stellt feste read-only HTTP-Abfragen fuer What-if-, Impact- und Readiness-Fragen bereit.
-4. `world-model-chat`: Beantwortet freie Fragen mit LLM-generierter, validierter read-only Cypher-Abfrage.
+Das System löst folgende zentrale Herausforderungen:
 
-Die zentrale Laufzeitsequenz ist:
+1. **Semantische Lücke schließen**: Aus technischen Entity-IDs werden verständliche Rollen und Funktionen
+2. **Stabile Identitäten schaffen**: Raw Entities werden zu Canonical Entities normalisiert
+3. **Intelligente Abhängigkeiten modellieren**: Automatisierungen, Capabilities und Kausalbeziehungen
+4. **What-if-Analysen ermöglichen**: Simulation von Ausfällen und deren Auswirkungen
+5. **Natürliche Interaktion**: Freie Fragen werden in präzise Graph-Abfragen übersetzt
 
-1. Home Assistant -> `ha-sync`
-2. `ha-sync` -> Neo4j
-3. `semantic-enrichment` -> liest aus Neo4j
-4. `semantic-enrichment` -> OpenAI Responses API
-5. `semantic-enrichment` -> schreibt Ergebnis nach Neo4j
-6. `query-api` -> liest vorbereitete Sichten aus Neo4j
-7. `world-model-chat` -> OpenAI erzeugt Cypher, Neo4j liefert Daten, OpenAI formuliert Antwort
+## Systemarchitektur
 
-## 1.1 Architekturdiagramm
+### Gesamtsystem-Übersicht
 
 ```mermaid
-flowchart LR
-  HA[Home Assistant]
-  Sync[ha-sync]
-  Neo4j[(Neo4j)]
-  Orch[semantic_enrich.py Orchestrator]
-  QueryAPI[query-api]
-  Chat[world-model-chat]
-  OpenAI[OpenAI Responses API]
+graph TB
+    subgraph "Eingabe-Schicht"
+        HA[Home Assistant<br/>REST API + WebSocket]
+        ENV[Umgebungsvariablen<br/>Konfiguration]
+    end
 
-  E1[semantic_roles]
-  E2[room_inference]
-  E3[automation_intent]
-  E4[fault_analysis]
-  E5[anomaly_detection]
-  E6[temporal_event_model]
-  E7[failure_impact]
-  E8[capability_mapping]
-  E9[semantic_descriptions]
-  E10[dependency_reasoning]
-  E11[causal_dependency]
-  E12[recommended_actions]
-  E13[simulation_readiness]
+    subgraph "Verarbeitungs-Schicht"
+        SYNC[ha-sync<br/>Daten-Import]
+        NEO4J[(Neo4j Graph DB<br/>Persistente Speicherung)]
+        ENRICH[semantic-enrichment<br/>LLM-Anreicherung]
+    end
 
-  HA -->|REST + WebSocket| Sync
-  Sync -->|Bolt write| Neo4j
-  Neo4j -->|Candidate read| Orch
+    subgraph "Abfrage-Schicht"
+        QUERY[query-api<br/>Strukturierte Abfragen]
+        CHAT[world-model-chat<br/>Natürliche Sprache]
+    end
 
-  Orch --> E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7 --> E8 --> E9 --> E10 --> E11 --> E12 --> E13
+    subgraph "Externe Services"
+        OPENAI[OpenAI API<br/>LLM + Structured Output]
+    end
 
-  E1 -->|LLM request| OpenAI
-  E2 -->|LLM request| OpenAI
-  E3 -->|LLM request| OpenAI
-  E4 -->|LLM request| OpenAI
-  E5 -->|LLM request| OpenAI
-  E6 -->|LLM request| OpenAI
-  E7 -->|LLM request| OpenAI
-  E8 -->|LLM request| OpenAI
-  E9 -->|LLM request| OpenAI
-  E10 -->|LLM request| OpenAI
-  E11 -->|LLM request| OpenAI
-  E12 -->|LLM request| OpenAI
-  E13 -->|LLM request| OpenAI
+    HA --> SYNC
+    ENV --> SYNC
+    ENV --> ENRICH
+    ENV --> QUERY
+    ENV --> CHAT
 
-  E1 -->|Graph write| Neo4j
-  E2 -->|Graph write| Neo4j
-  E3 -->|Graph write| Neo4j
-  E4 -->|Graph write| Neo4j
-  E5 -->|Graph write| Neo4j
-  E6 -->|Graph write| Neo4j
-  E7 -->|Graph write| Neo4j
-  E8 -->|Graph write| Neo4j
-  E9 -->|Graph write| Neo4j
-  E10 -->|Graph write| Neo4j
-  E11 -->|Graph write| Neo4j
-  E12 -->|Graph write| Neo4j
-  E13 -->|Graph write| Neo4j
+    SYNC --> NEO4J
+    ENRICH --> OPENAI
+    OPENAI --> ENRICH
+    ENRICH --> NEO4J
 
-  QueryAPI -->|Bolt read| Neo4j
-  Chat -->|Cypher generation| OpenAI
-  Chat -->|Bolt read| Neo4j
-  Chat -->|Answer generation| OpenAI
+    QUERY --> NEO4J
+    CHAT --> OPENAI
+    CHAT --> NEO4J
+
+    style HA fill:#e1f5fe
+    style NEO4J fill:#fff3e0
+    style OPENAI fill:#f3e5f5
 ```
 
-## 2. Wichtige Einstiegspunkte
+### Datenfluss-Architektur
 
-### 2.1 `ha-sync/sync.py`
+```mermaid
+sequenceDiagram
+    participant HA as Home Assistant
+    participant Sync as ha-sync
+    participant Neo4j as Neo4j DB
+    participant Enrich as semantic-enrichment
+    participant OpenAI as OpenAI API
+    participant Query as query-api
+    participant Chat as world-model-chat
+    participant User as Benutzer
 
-Verantwortung:
+    Note over HA,User: Initialer Datenimport
+    HA->>Sync: REST/WebSocket Daten
+    Sync->>Neo4j: Normalisierte Entities speichern
 
-- Abfragen gegen Home Assistant (`/api/states`, Registry-Endpunkte)
-- Normalisierung von Attributen
-- Persistenz in Neo4j (Knoten + Kanten)
-- Wiederholter Sync in Intervallen
+    Note over Enrich,OpenAI: Semantische Anreicherung
+    Enrich->>Neo4j: Kandidaten lesen
+    Enrich->>OpenAI: Structured Prompts senden
+    OpenAI->>Enrich: Schema-validierte JSON-Antworten
+    Enrich->>Neo4j: Semantische Relationen speichern
+
+    Note over Query,User: Strukturierte Abfragen
+    User->>Query: HTTP-Request (z.B. /capabilities)
+    Query->>Neo4j: Cypher-Abfrage
+    Neo4j->>Query: JSON-Ergebnisse
+    Query->>User: Formatierte Antwort
+
+    Note over Chat,User: Natürliche Sprachabfragen
+    User->>Chat: Freie Frage ("Was passiert wenn der Bewegungsmelder ausfällt?")
+    Chat->>OpenAI: Cypher-Generierung
+    OpenAI->>Chat: Validierte Cypher-Query
+    Chat->>Neo4j: Abfrage ausführen
+    Neo4j->>Chat: Rohdaten
+    Chat->>OpenAI: Antwort-Generierung
+    OpenAI->>Chat: Natürliche Antwort
+    Chat->>User: Lesbare Erklärung
+```
+
+## Detaillierte Funktionsbeschreibung
+
+### 1. HA-Sync: Daten-Import und Normalisierung
+
+**Funktion**: Importiert und normalisiert alle relevanten Daten aus Home Assistant in eine graphbasierte Struktur.
+
+**Eingabe**:
+- REST API: `/api/states` (aktuelle Zustände aller Entities)
+- WebSocket API: `config/config_entries/list` (Integrationen-Registry)
+- Umgebungsvariablen: `HA_URL`, `HA_TOKEN`
+
+**Verarbeitung**:
+1. **Entity-Normalisierung**: Konvertiert HA-Entity-IDs in standardisierte Knoten
+2. **Attribut-Mapping**: Extrahiert relevante Attribute (friendly_name, device_class, etc.)
+3. **Beziehungs-Aufbau**: Erstellt Verknüpfungen zwischen Entities, Devices, Areas
+4. **Domain-Klassifikation**: Gruppiert Entities nach HA-Domains (light, sensor, etc.)
+
+**Ausgabe**: Normalisierte Graph-Struktur in Neo4j mit folgenden Hauptknoten:
+- `Entity`: Einzelne HA-Entities mit allen Attributen
+- `Device`: Physische Geräte (gruppieren Entities)
+- `Area`: Räume/Bereiche
+- `Integration`: HA-Integrationen
+- `Domain`: HA-Domain-Klassifikationen
+- `Automation`: HA-Automatisierungen
+
+**Technische Details**:
+- Fallback-Mechanismen für API-Inkompatibilitäten
+- Wiederholte Synchronisation in konfigurierbaren Intervallen
+- Fehlerbehandlung für Netzwerkprobleme und API-Änderungen
+
+### 2. Semantic-Enrichment: LLM-basierte Anreicherung
+
+**Funktion**: Reicherte die technischen Daten mit semantischer Bedeutung an, indem KI-gestützte Analysen durchgeführt werden.
+
+**Eingabe**:
+- Neo4j-Graph mit normalisierten Entities
+- OpenAI API für strukturierte Ausgaben
+- Spezialisierte Prompts für verschiedene Analyse-Typen
+
+**Verarbeitung**: Orchestriert 13 spezialisierte Enricher in sequentieller Reihenfolge:
+
+```mermaid
+flowchart TD
+    A[Kandidaten aus Neo4j lesen] --> B[semantic_roles]
+    B --> C[room_inference]
+    C --> D[automation_intent]
+    D --> E[fault_analysis]
+    E --> F[anomaly_detection]
+    F --> G[temporal_event_model]
+    G --> H[failure_impact]
+    H --> I[capability_mapping]
+    I --> J[semantic_descriptions]
+    J --> K[dependency_reasoning]
+    K --> L[causal_dependency]
+    L --> M[recommended_actions]
+    M --> N[simulation_readiness]
+    N --> O[Ergebnisse in Neo4j schreiben]
+
+    style A fill:#e8f5e8
+    style O fill:#e8f5e8
+```
+
+#### Enricher-Details:
+
+1. **semantic_roles**: Klassifiziert Entities in fachliche Rollen (Sensor, Aktor, Diagnose)
+2. **room_inference**: Schließt Raum-Zuordnungen aus Entity-Namen und Attributen
+3. **automation_intent**: Analysiert Automatisierungs-Zwecke und -Logik
+4. **fault_analysis**: Identifiziert mögliche Fehlerquellen und Diagnosemuster
+5. **anomaly_detection**: Erkennt ungewöhnliche Zustände und Verhaltensmuster
+6. **temporal_event_model**: Modelliert zeitliche Abläufe und Event-Ketten
+7. **failure_impact**: Bewertet Auswirkungen von Komponentenausfällen
+8. **capability_mapping**: Ordnet Entities zu funktionalen Capabilities (Beleuchtung, Sicherheit)
+9. **semantic_descriptions**: Erstellt menschenlesbare Beschreibungen
+10. **dependency_reasoning**: Identifiziert Abhängigkeiten zwischen Komponenten
+11. **causal_dependency**: Modelliert Ursache-Wirkungs-Beziehungen
+12. **recommended_actions**: Schlägt Handlungsoptionen für verschiedene Szenarien vor
+13. **simulation_readiness**: Bewertet Eignung für Simulationen und Tests
+
+**Ausgabe**: Semantisch angereicherte Graph-Struktur mit zusätzlichen Knoten und Beziehungen:
+- `SemanticRole`, `SemanticCategory`, `Criticality`
+- `Capability`, `AutomationIntent`
+- `FaultType`, `AnomalyType`
+- `FailureImpactLevel`, `RecommendedActionType`
+- `SimulationReadinessLevel`
+
+### 3. Query-API: Strukturierte Graph-Abfragen
+
+**Funktion**: Stellt vordefinierte HTTP-Endpunkte für wiederkehrende Analyse-Fragen bereit.
+
+**Eingabe**: HTTP-Requests mit Parametern für Filter und Limits
+
+**Verarbeitung**: Führt optimierte Cypher-Queries gegen Neo4j aus
+
+**Ausgabe**: JSON-formatierte Ergebnisse für verschiedene Analyse-Typen
+
+**Wichtige Endpunkte**:
+- `/health`: Systemstatus
+- `/entities`: Entity-Übersicht mit Filtern
+- `/capabilities`: Capability-Mapping und -Analyse
+- `/simulation-readiness`: Simulationsfähigkeit bewerten
+- `/what-if-impact`: Auswirkungsanalyse für Szenarien
+- `/entity-dependencies`: Abhängigkeitsgraph für Entities
+
+### 4. World-Model-Chat: Natürliche Sprachinteraktion
+
+**Funktion**: Ermöglicht freie Fragen in natürlicher Sprache und übersetzt diese in sichere Graph-Abfragen.
+
+**Eingabe**: Natürlichsprachliche Fragen via HTTP POST
+
+**Verarbeitung**:
+1. **Cypher-Generierung**: OpenAI erstellt validierte Cypher-Queries
+2. **Sicherheitsvalidierung**: Prüfung auf read-only und ressourcenbegrenzte Queries
+3. **Ausführung**: Sichere Query-Ausführung gegen Neo4j
+4. **Antwort-Generierung**: OpenAI formuliert menschenlesbare Antworten
+
+**Ausgabe**: Natürlichsprachliche Erklärungen basierend auf Graph-Daten
+
+## Datenmodell und Graph-Struktur
+
+### Kern-Entitäten
+
+```mermaid
+classDiagram
+    class Entity {
+        +entity_id: string
+        +friendly_name: string
+        +state: string
+        +domain: string
+        +device_class: string
+        +unit_of_measurement: string
+    }
+
+    class CanonicalEntity {
+        +canonical_id: string
+        +canonical_name: string
+        +entity_type: string
+    }
+
+    class RawEntity {
+        +raw_entity_id: string
+        +source_entity_id: string
+    }
+
+    class SemanticRole {
+        +name: string
+        +description: string
+    }
+
+    class Capability {
+        +name: string
+        +category: string
+        +description: string
+    }
+
+    Entity ||--o{ RawEntity : represented_by
+    RawEntity ||--|| CanonicalEntity : resolved_to
+    CanonicalEntity ||--o{ SemanticRole : has_semantic_role
+    Entity ||--o{ Capability : provides_capability
+```
+
+### Beziehungs-Typen
+
+**Technische Beziehungen**:
+- `BELONGS_TO_DOMAIN`: Entity → Domain
+- `PROVIDED_BY`: Entity → Integration
+- `LOCATED_IN`: Entity → Area
+- `REPRESENTS`: Entity → Device
+
+**Semantische Beziehungen**:
+- `HAS_SEMANTIC_ROLE`: Entity → SemanticRole
+- `HAS_SEMANTIC_CATEGORY`: Entity → SemanticCategory
+- `PROVIDES_CAPABILITY`: Entity → Capability
+- `DEPENDS_ON`: Entity → Entity
+- `CAUSES`: Entity → Entity
+- `HAS_FAILURE_IMPACT`: Entity → FailureImpactLevel
+
+## Betriebsablauf
+
+### 1. Initiales Setup
+
+```bash
+# 1. Konfiguration
+cp .env.example .env
+# Bearbeite .env mit HA_URL, HA_TOKEN, NEO4J_PASSWORD, OPENAI_API_KEY
+
+# 2. System starten
+docker compose up -d --build
+
+# 3. Logs überwachen
+docker compose logs -f ha-sync
+docker compose logs -f semantic-enrichment
+```
+
+### 2. Laufender Betrieb
+
+```mermaid
+stateDiagram-v2
+    [*] --> Setup
+    Setup --> InitialSync: docker compose up
+    InitialSync --> Enrichment: Daten verfügbar
+    Enrichment --> QueryReady: Semantik angereichert
+    QueryReady --> ChatReady: APIs verfügbar
+
+    QueryReady --> QueryAPI: HTTP-Requests
+    ChatReady --> ChatAPI: Natürliche Fragen
+
+    InitialSync --> ContinuousSync: SYNC_INTERVAL_SECONDS
+    ContinuousSync --> Enrichment
+    Enrichment --> ContinuousEnrichment: SLEEP_SECONDS
+
+    note right of ContinuousSync : Regelmäßige HA-Synchronisation
+    note right of ContinuousEnrichment : Kontinuierliche semantische Anreicherung
+```
+
+### 3. Monitoring und Wartung
+
+- **Health-Checks**: `/health` Endpunkte für alle Services
+- **Logs**: Docker-Compose logs für Debugging
+- **Metrics**: Neo4j-Browser für Graph-Inspektion
+- **Benchmarks**: Automatische Performance-Messungen
+
+## Konfiguration und Anpassung
+
+### Umgebungsvariablen
+
+**Basis-Konfiguration**:
+- `HA_URL`: Home Assistant URL
+- `HA_TOKEN`: Long-Lived Access Token
+- `NEO4J_URI`: Neo4j-Verbindungsstring
+- `NEO4J_PASSWORD`: Datenbank-Passwort
+
+**Performance-Tuning**:
+- `SYNC_INTERVAL_SECONDS`: Synchronisations-Intervall (Standard: 300)
+- `BATCH_SIZE`: LLM-Batch-Größe (Standard: 20)
+- `SLEEP_SECONDS`: Pause zwischen Enrichment-Batches (Standard: 300)
+
+**Qualitäts-Einstellungen**:
+- `MIN_CONFIDENCE`: Mindest-Konfidenz für semantische Beziehungen (Standard: 0.5)
+- `WORLD_MODEL_CHAT_MIN_CYPHER_CONFIDENCE`: Mindest-Konfidenz für generierte Queries (Standard: 0.4)
+
+## Erweiterte Funktionen
+
+### Canonical Entity Layer
+
+Das System implementiert eine quellenunabhängige Identitätsschicht:
+
+- **Raw Entities**: Direkte HA-Entity-Repräsentationen
+- **Canonical Entities**: Stabile, semantische Identitäten
+- **Evidence**: Begründungen für Normalisierungsentscheidungen
+- **Resolution Decisions**: Nachvollziehbare Zuordnungslogik
+
+### Simulation und What-if-Analysen
+
+- **Ausfall-Simulationen**: Berechnung von Impact-Ketten
+- **Capability-Analysen**: Verfügbarkeit funktionaler Fähigkeiten
+- **Dependency-Reasoning**: Identifikation kritischer Pfade
+- **Recommended Actions**: Handlungsempfehlungen für Szenarien
+
+### Natürliche Sprachverarbeitung
+
+- **Kontext-sensitive Abfragen**: Verständnis von "kritischen Sensoren" vs. "Komfort-Features"
+- **Sichere Query-Generierung**: Read-only Garantie durch Validierung
+- **Erklärbare Antworten**: Nachvollziehbare Begründungen aus Graph-Daten
+
+## Qualitätssicherung
+
+### Automatische Tests
+
+Das System enthält umfassende Benchmark-Funktionen:
+
+- **Technische Metriken**: Laufzeit, Durchsatz, Latenz
+- **Graph-Metriken**: Knoten/Beziehungen, Coverage-Ratios
+- **Semantische Metriken**: Vollständigkeit, Konfidenz, Erklärbarkeit
+- **Query-Performance**: Erfolgsraten, Antwortzeiten
+
+### Validierung
+
+- **Schema-Validierung**: LLM-Outputs gegen JSON-Schemas
+- **Konfidenz-Schwellen**: Filter für unsichere Ergebnisse
+- **Read-only Garantie**: Sicherheitsprüfungen für generierte Queries
+
+## Ausblick und Erweiterungen
+
+### Potenzielle Erweiterungen
+
+1. **Multi-Source-Integration**: Weitere Smart-Home-Systeme als Datenquellen
+2. **Zeitliche Modellierung**: Historische Daten und Trend-Analysen
+3. **Predictive Analytics**: Vorhersage von Ausfällen und Verhaltensmustern
+4. **Multi-Agent-Systeme**: Koordinierte Entscheidungsfindung
+5. **Real-time-Adaptation**: Automatische Anpassung an geänderte Bedingungen
+
+### Skalierbarkeit
+
+- **Horizontale Skalierung**: Mehrere Enrichment-Instanzen
+- **Caching-Schichten**: Performance-Optimierung für häufige Queries
+- **Graph-Partitionierung**: Aufteilung großer Modelle
+
+Diese funktionale Beschreibung bietet eine vollständige Grundlage für das Verständnis, die Wartung und die Erweiterung des HA-CPsWMS. Sie kann als Basis für Schulungen, Präsentationen und technische Dokumentation dienen.
 
 Direkte technische Abhaengigkeiten:
 

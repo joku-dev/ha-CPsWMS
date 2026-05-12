@@ -1,8 +1,3 @@
-"""CLI entry point for semantic benchmark runs."""
-
-from __future__ import annotations
-
-import argparse
 import subprocess
 import time
 from pathlib import Path
@@ -15,6 +10,102 @@ from .query_benchmark import QueryBenchmarkRunner
 from .report_generator import ReportGenerator
 from .score_calculator import ScoreCalculator
 from .semantic_metrics import SemanticMetricsCollector
+
+
+def generate_performance_evolution(output_dir: Path) -> None:
+    """Generate performance evolution summary by comparing all benchmark reports."""
+    import json
+    from pathlib import Path
+
+    # Find all benchmark JSON files
+    benchmark_files = list(output_dir.glob("*_benchmark.json"))
+    if len(benchmark_files) < 2:
+        return  # Need at least 2 reports for comparison
+
+    # Sort by timestamp (filename contains ISO timestamp)
+    benchmark_files.sort(key=lambda p: p.name)
+
+    # Load all reports
+    reports = []
+    for bf in benchmark_files:
+        try:
+            data = json.loads(bf.read_text(encoding="utf-8"))
+            reports.append((bf, data))
+        except Exception:
+            continue  # Skip invalid files
+
+    if len(reports) < 2:
+        return
+
+    # Generate pairwise comparisons
+    comparisons = []
+    for i in range(len(reports) - 1):
+        baseline_file, baseline_data = reports[i]
+        target_file, target_data = reports[i + 1]
+
+        # Run comparison
+        try:
+            result = subprocess.run([
+                "python3", "-m", "benchmark.compare_reports",
+                "--baseline", str(baseline_file),
+                "--target", str(target_file)
+            ], capture_output=True, text=True, cwd=Path.cwd())
+
+            if result.returncode == 0:
+                comparison_data = json.loads(result.stdout)
+                comparison_file = output_dir / f"comparison_{baseline_file.name.replace('_benchmark.json', '')}_to_{target_file.name.replace('_benchmark.json', '')}.json"
+                comparison_file.write_text(json.dumps(comparison_data, indent=2, ensure_ascii=False))
+                comparisons.append((baseline_file, target_file, comparison_data))
+                print(f"Generated comparison: {comparison_file.name}")
+        except Exception as e:
+            print(f"Warning: Failed to compare {baseline_file.name} vs {target_file.name}: {e}")
+
+    # Generate markdown summary
+    if comparisons:
+        summary_file = output_dir / "performance_evolution_summary.md"
+        summary_content = generate_evolution_summary(reports, comparisons)
+        summary_file.write_text(summary_content)
+        print(f"Updated performance evolution summary: {summary_file.name}")
+
+
+def generate_evolution_summary(reports: list, comparisons: list) -> str:
+    """Generate markdown summary of performance evolution."""
+    lines = ["# Benchmark Performance Evolution Summary\n"]
+
+    # List all reports
+    lines.append("## Available benchmark reports")
+    for file_path, _ in reports:
+        lines.append(f"- `{file_path.name}`")
+    lines.append("")
+
+    # List comparison files
+    lines.append("## Generated comparison files")
+    for baseline_file, target_file, _ in comparisons:
+        comp_name = f"comparison_{baseline_file.name.replace('_benchmark.json', '')}_to_{target_file.name.replace('_benchmark.json', '')}.json"
+        lines.append(f"- `{comp_name}`")
+    lines.append("")
+
+    # Summary of results
+    lines.append("## Summary of results\n")
+    for baseline_file, target_file, comparison_data in comparisons:
+        baseline_time = baseline_file.name.split('_')[0]
+        target_time = target_file.name.split('_')[0]
+        lines.append(f"### {baseline_time} → {target_time}")
+
+        for metric, data in comparison_data.items():
+            if data.get("delta_percent") is not None:
+                delta_pct = data["delta_percent"]
+                if abs(delta_pct) > 0.1:  # Only show significant changes
+                    direction = "+" if delta_pct > 0 else ""
+                    lines.append(f"- `{metric}` changed by {direction}{delta_pct:.1f}%")
+        lines.append("")
+
+    lines.append("## Notes")
+    lines.append("- This summary is automatically generated after each benchmark run.")
+    lines.append("- Comparisons show significant changes (>0.1% absolute).")
+    lines.append("- All metrics are calculated from the JSON benchmark reports.")
+
+    return "\n".join(lines)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -133,6 +224,13 @@ def main(argv: list[str] | None = None) -> int:
         written = ReportGenerator(cfg.output_dir).write(report, cfg.formats)
         for output_format, path in written.items():
             print(f"Wrote {output_format}: {path}")
+
+        # Generate performance evolution summary
+        try:
+            generate_performance_evolution(cfg.output_dir)
+        except Exception as exc:
+            print(f"Warning: Failed to generate performance evolution: {exc}")
+
         return 1 if report.errors else 0
     finally:
         client.close()
