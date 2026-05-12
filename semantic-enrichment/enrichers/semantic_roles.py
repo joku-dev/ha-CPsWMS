@@ -153,4 +153,6 @@ class SemanticRolesEnricher(BaseEnricher):
         """
 
         for item in items:
+            from config import OPENAI_MODEL
+            item['model'] = OPENAI_MODEL
             self.execute_targeted_write(canonical_body, entity_body, item)

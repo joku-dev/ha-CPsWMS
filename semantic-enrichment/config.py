@@ -25,7 +25,7 @@ BATCH_SIZE = int(os.getenv("BATCH_SIZE", "20"))
 SLEEP_SECONDS = int(os.getenv("SLEEP_SECONDS", "300"))
 MIN_CONFIDENCE = float(os.getenv("MIN_CONFIDENCE", "0.5"))
 
-ENABLE_SEMANTIC_IDENTITY = os.getenv("ENABLE_SEMANTIC_IDENTITY", "true").lower() == "true"
+ENABLE_SEMANTIC_IDENTITY = os.getenv("ENABLE_SEMANTIC_IDENTITY", "false").lower() == "true"
 DEFAULT_ENRICHMENT_TARGET_MODE = "canonical_first" if ENABLE_SEMANTIC_IDENTITY else "entity_first"
 ENRICHMENT_TARGET_MODE = os.getenv("ENRICHMENT_TARGET_MODE", DEFAULT_ENRICHMENT_TARGET_MODE).lower()
 if ENRICHMENT_TARGET_MODE not in {"canonical_first", "entity_first", "dual_write"}:
