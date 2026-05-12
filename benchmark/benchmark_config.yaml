@@ -1,0 +1,32 @@
+benchmark:
+  target_name: "ha-CPsWMS"
+  low_confidence_threshold: 0.5
+  high_confidence_threshold: 0.8
+  output_dir: "benchmark/reports"
+
+neo4j:
+  uri: "bolt://localhost:7687"
+  user: "neo4j"
+  password_env: "NEO4J_PASSWORD"
+  database: "neo4j"
+
+queries:
+  run_query_benchmark: true
+  query_timeout_seconds: 30
+
+llm:
+  collect_llm_metrics: true
+  cost_estimation_enabled: false
+  default_cost_per_1000_tokens: null
+
+scores:
+  semantic_score_weights:
+    semantic_role_coverage_ratio: 0.20
+    semantic_category_coverage_ratio: 0.15
+    capability_coverage_ratio: 0.15
+    dependency_coverage_ratio: 0.15
+    causal_relation_coverage_ratio: 0.10
+    simulation_readiness_coverage_ratio: 0.10
+    average_semantic_confidence: 0.10
+    explainability_coverage_ratio: 0.05
+
