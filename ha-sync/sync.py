@@ -143,6 +143,20 @@ def safe_ws(command_type, label):
         return []
 
 
+def get_ha_config_entries_rest():
+    try:
+        response = requests.get(
+            f"{HA_URL}/api/config/config_entries/entry",
+            headers=ha_headers(),
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as exc:
+        print(f"Could not read config entries via REST: {exc}")
+        return []
+
+
 def get_entity_registry():
     return safe_ws("config/entity_registry/list", "entity registry")
 
@@ -164,7 +178,38 @@ def get_label_registry():
 
 
 def get_config_entry_registry():
-    return safe_ws("config/config_entries/list", "config entries")
+    config_entries = safe_ws("config/config_entries/list", "config entries")
+    if config_entries:
+        return config_entries
+
+    print("Falling back to REST API for config entry registry")
+    config_entries = get_ha_config_entries_rest()
+    if config_entries:
+        return config_entries
+
+    return []
+
+
+def derive_integrations_from_states(states):
+    integrations = {}
+    for entity in states:
+        entity_id = entity.get("entity_id")
+        if not entity_id or "." not in entity_id:
+            continue
+
+        domain = entity_id.split(".")[0]
+        if domain in integrations:
+            continue
+
+        integrations[domain] = {
+            "domain": domain,
+            "title": f"Derived integration for {domain}",
+            "source": "derived_from_states",
+            "disabled_by": None,
+            "state": "unknown",
+        }
+
+    return list(integrations.values())
 
 
 def extract_entity_ids_from_object(obj):
@@ -687,6 +732,10 @@ def run_sync(driver):
 
     events = get_ha_events() if ENABLE_EVENT_HISTORY else []
     logbook = get_ha_logbook() if ENABLE_EVENT_HISTORY else []
+
+    if not config_entries:
+        print("Config entry registry unavailable; deriving integration domains from HA states")
+        config_entries = derive_integrations_from_states(states)
 
     registry_by_entity_id = {
         item.get("entity_id"): item
