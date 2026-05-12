@@ -39,6 +39,9 @@ class CausalDependencyEnricher(BaseEnricher):
         """Fetch entities with both semantic capability and temporal evidence."""
         query = """
         MATCH (e:Entity)
+        OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
+        OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
+
         WHERE coalesce(e.causal_dependency_enriched, false) = false
         MATCH (e)-[:HAS_SEMANTIC_ROLE]->(role:SemanticRole)
         MATCH (e)-[:HAS_SEMANTIC_CATEGORY]->(category:SemanticCategory)
@@ -143,7 +146,11 @@ class CausalDependencyEnricher(BaseEnricher):
             incidents AS incidents,
             triggered_automations AS triggered_automations,
             controlling_automations AS controlling_automations,
-            can_cause_entities AS can_cause_entities
+            can_cause_entities AS can_cause_entities,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 

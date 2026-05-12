@@ -24,6 +24,9 @@ class CapabilityMappingEnricher(BaseEnricher):
         """Fetch semantically enriched entities that still need capability mapping."""
         query = """
         MATCH (e:Entity)
+        OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
+        OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
+
         WHERE coalesce(e.capability_mapped, false) = false
         OPTIONAL MATCH (e)-[:HAS_SEMANTIC_ROLE]->(role:SemanticRole)
         OPTIONAL MATCH (e)-[:HAS_SEMANTIC_CATEGORY]->(category:SemanticCategory)
@@ -62,7 +65,11 @@ class CapabilityMappingEnricher(BaseEnricher):
             [cap IN affected_capabilities WHERE cap IS NOT NULL] AS affected_capabilities,
             triggered_automations AS triggered_automations,
             controlled_by_automations AS controlled_by_automations,
-            condition_automations AS condition_automations
+            condition_automations AS condition_automations,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 
@@ -94,8 +101,21 @@ class CapabilityMappingEnricher(BaseEnricher):
 
     def write_results(self, items):
         """Persist explicit PROVIDES_CAPABILITY relationships."""
-        query = """
-        MATCH (e:Entity {entity_id: $entity_id})
+        canonical_body = """
+        MERGE (cap:Capability {name: $capability})
+
+        MERGE (c)-[r:PROVIDES_CAPABILITY]->(cap)
+        SET r.provides_level = $provides_level,
+            r.confidence = $confidence,
+            r.reason = $reason,
+            r.source = "openai",
+            r.updated_at = datetime()
+
+        SET e.capability_mapped = true,
+            e.capability_mapped_at = datetime()
+        """
+
+        entity_body = """
         MERGE (cap:Capability {name: $capability})
 
         MERGE (e)-[r:PROVIDES_CAPABILITY]->(cap)
@@ -109,6 +129,5 @@ class CapabilityMappingEnricher(BaseEnricher):
             e.capability_mapped_at = datetime()
         """
 
-        with self.driver.session() as session:
-            for item in items:
-                session.run(query, **item)
+        for item in items:
+            self.execute_targeted_write(canonical_body, entity_body, item)

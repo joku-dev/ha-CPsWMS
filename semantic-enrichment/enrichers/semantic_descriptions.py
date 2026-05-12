@@ -24,6 +24,9 @@ class SemanticDescriptionsEnricher(BaseEnricher):
         """Fetch entities that still need generated semantic descriptions."""
         query = """
         MATCH (e:Entity)
+        OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
+        OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
+
         WHERE e.semantic_description_enriched IS NULL
            OR e.semantic_description_enriched = false
         OPTIONAL MATCH (e)-[:HAS_SEMANTIC_ROLE]->(role:SemanticRole)
@@ -36,7 +39,11 @@ class SemanticDescriptionsEnricher(BaseEnricher):
             e.state AS state,
             role.name AS semantic_role,
             category.name AS semantic_category,
-            criticality.level AS criticality
+            criticality.level AS criticality,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 
@@ -54,8 +61,24 @@ class SemanticDescriptionsEnricher(BaseEnricher):
 
     def write_results(self, items):
         """Persist description nodes and HAS_SEMANTIC_DESCRIPTION links."""
-        query = """
-        MATCH (e:Entity {entity_id: $entity_id})
+        canonical_body = """
+        MERGE (d:SemanticDescription {entity_id: $entity_id})
+        SET d.short_description = $short_description,
+            d.technical_context = $technical_context,
+            d.source = "openai",
+            d.updated_at = datetime()
+
+        MERGE (c)-[r:HAS_SEMANTIC_DESCRIPTION]->(d)
+        SET r.confidence = $confidence,
+            r.reason = $reason,
+            r.source = "openai",
+            r.updated_at = datetime()
+
+        SET e.semantic_description_enriched = true,
+            e.semantic_description_enriched_at = datetime()
+        """
+
+        entity_body = """
         MERGE (d:SemanticDescription {entity_id: $entity_id})
         SET d.short_description = $short_description,
             d.technical_context = $technical_context,
@@ -72,6 +95,5 @@ class SemanticDescriptionsEnricher(BaseEnricher):
             e.semantic_description_enriched_at = datetime()
         """
 
-        with self.driver.session() as session:
-            for item in items:
-                session.run(query, **item)
+        for item in items:
+            self.execute_targeted_write(canonical_body, entity_body, item)

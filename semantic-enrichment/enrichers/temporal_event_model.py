@@ -50,6 +50,9 @@ class TemporalEventModelEnricher(BaseEnricher):
         """Fetch entities that have not yet been transformed into temporal model nodes."""
         query = """
         MATCH (e:Entity)
+        OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
+        OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
+
         WHERE coalesce(e.temporal_event_modeled, false) = false
 
         OPTIONAL MATCH (ev:HomeAssistantEvent)-[:AFFECTED_ENTITY]->(e)
@@ -74,7 +77,11 @@ class TemporalEventModelEnricher(BaseEnricher):
             e.is_problem AS is_problem,
             recent_events AS recent_events,
             collect(DISTINCT a1.name) AS triggered_automations,
-            collect(DISTINCT a2.name) AS controlled_by_automations
+            collect(DISTINCT a2.name) AS controlled_by_automations,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 
@@ -92,9 +99,80 @@ class TemporalEventModelEnricher(BaseEnricher):
 
     def write_results(self, items):
         """Persist Observation, StateTransition, TimelineEvent and Incident nodes."""
-        query = """
-        MATCH (e:Entity {entity_id: $entity_id})
+        canonical_body = """
+        CREATE (obs:Observation {
+            observation_id: randomUUID(),
+            text: $observation_text,
+            observed_at: CASE
+                WHEN $observed_at IS NULL OR $observed_at = "" THEN NULL
+                ELSE datetime($observed_at)
+            END,
+            source: "openai",
+            created_at: datetime()
+        })
+        MERGE (c)-[:HAS_OBSERVATION]->(obs)
 
+        CREATE (te:TimelineEvent {
+            timeline_event_id: randomUUID(),
+            event_type: $timeline_event_type,
+            summary: $timeline_summary,
+            event_time: CASE
+                WHEN $timeline_at IS NULL OR $timeline_at = "" THEN NULL
+                ELSE datetime($timeline_at)
+            END,
+            source: "openai",
+            created_at: datetime()
+        })
+        MERGE (c)-[:HAS_TIMELINE_EVENT]->(te)
+        MERGE (te)-[:HAS_OBSERVATION]->(obs)
+
+        FOREACH (_ IN CASE
+            WHEN $transition_from IS NOT NULL OR $transition_to IS NOT NULL THEN [1]
+            ELSE []
+        END |
+            CREATE (st:StateTransition {
+                transition_id: randomUUID(),
+                from_state: $transition_from,
+                to_state: $transition_to,
+                transition_at: CASE
+                    WHEN $transition_at IS NULL OR $transition_at = "" THEN NULL
+                    ELSE datetime($transition_at)
+                END,
+                source: "openai",
+                created_at: datetime()
+            })
+            MERGE (c)-[:HAS_STATE_TRANSITION]->(st)
+            MERGE (te)-[:DESCRIBES_TRANSITION]->(st)
+        )
+
+        FOREACH (_ IN CASE
+            WHEN $incident_type IS NOT NULL
+             AND $incident_type <> "none"
+             AND $incident_type <> "unknown"
+            THEN [1]
+            ELSE []
+        END |
+            CREATE (inc:Incident {
+                incident_id: randomUUID(),
+                incident_type: $incident_type,
+                severity: $incident_severity,
+                reason: $reason,
+                opened_at: CASE
+                    WHEN $timeline_at IS NULL OR $timeline_at = "" THEN datetime()
+                    ELSE datetime($timeline_at)
+                END,
+                source: "openai",
+                created_at: datetime()
+            })
+            MERGE (c)-[:HAS_INCIDENT]->(inc)
+            MERGE (te)-[:INDICATES_INCIDENT]->(inc)
+        )
+
+        SET e.temporal_event_modeled = true,
+            e.temporal_event_modeled_at = datetime()
+        """
+
+        entity_body = """
         CREATE (obs:Observation {
             observation_id: randomUUID(),
             text: $observation_text,
@@ -167,6 +245,5 @@ class TemporalEventModelEnricher(BaseEnricher):
             e.temporal_event_modeled_at = datetime()
         """
 
-        with self.driver.session() as session:
-            for item in items:
-                session.run(query, **item)
+        for item in items:
+            self.execute_targeted_write(canonical_body, entity_body, item)

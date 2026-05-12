@@ -17,6 +17,7 @@ from config import (
     PROMPTS_DIR,
     SCHEMAS_DIR,
 )
+from .enrichment_target_resolver import EnrichmentTargetResolver
 
 
 class BaseEnricher(ABC):
@@ -38,6 +39,7 @@ class BaseEnricher(ABC):
             NEO4J_URI,
             auth=(NEO4J_USER, NEO4J_PASSWORD),
         )
+        self.target_resolver = EnrichmentTargetResolver()
 
     def setup(self):
         """Prepare shared and enricher-specific database constraints."""
@@ -173,8 +175,15 @@ class BaseEnricher(ABC):
 
         return True
 
+    def execute_targeted_write(self, canonical_body, entity_body, item):
+        """Run an enrichment write query that targets canonical or legacy entities."""
+        query = self.target_resolver.build_write_query(canonical_body, entity_body)
+        with self.driver.session() as session:
+            session.run(query, **item)
+
     def run_once(self):
         """Run one enrichment iteration for the current enricher."""
+        print(f"[{self.name}] Enrichment target mode: {self.target_resolver.get_mode()}")
         print(f"[{self.name}] Selecting candidates...")
 
         items = self.get_candidates(BATCH_SIZE)

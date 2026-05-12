@@ -261,7 +261,18 @@ def sync_entity_semantic(session, entity, registry_by_entity_id, pipeline, write
     decision = pipeline.process(raw_entity, source_trust=SEMANTIC_SOURCE_TRUST)
     canonical_entity = pipeline.registry.get_entity(decision.canonical_id) if decision.canonical_id else None
     writer.write_resolution_result(raw_entity, canonical_entity, decision, source_system=source_system, session=session)
+    link_entity_raw_representation(session, raw_entity)
     return decision
+
+
+def link_entity_raw_representation(session, raw_entity):
+    session.run("""
+        MATCH (raw:RawEntity {raw_entity_id: $raw_entity_id})
+        OPTIONAL MATCH (e:Entity {entity_id: $entity_id})
+        FOREACH (_ IN CASE WHEN e IS NOT NULL THEN [1] ELSE [] END |
+            MERGE (e)-[:HAS_RAW_REPRESENTATION]->(raw)
+        )
+    """, raw_entity_id=raw_entity.raw_entity_id, entity_id=raw_entity.source_entity_id)
 
 
 def sync_floors(tx, floors):

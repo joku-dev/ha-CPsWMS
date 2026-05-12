@@ -24,6 +24,9 @@ class FailureImpactEnricher(BaseEnricher):
         """Fetch entities that still need failure impact assessment."""
         query = """
         MATCH (e:Entity)
+        OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
+        OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
+
         WHERE e.failure_impact_enriched IS NULL
            OR e.failure_impact_enriched = false
         OPTIONAL MATCH (e)-[:HAS_SEMANTIC_ROLE]->(role:SemanticRole)
@@ -41,7 +44,11 @@ class FailureImpactEnricher(BaseEnricher):
             crit.level AS criticality,
             area.name AS area,
             collect(DISTINCT a1.name) AS triggered_automations,
-            collect(DISTINCT a2.name) AS controlled_by_automations
+            collect(DISTINCT a2.name) AS controlled_by_automations,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 
@@ -59,8 +66,23 @@ class FailureImpactEnricher(BaseEnricher):
 
     def write_results(self, items):
         """Persist failure impact relationships and summaries."""
-        query = """
-        MATCH (e:Entity {entity_id: $entity_id})
+        canonical_body = """
+        MERGE (level:FailureImpactLevel {level: $impact_level})
+
+        MERGE (c)-[r:HAS_FAILURE_IMPACT]->(level)
+        SET r.impact_summary = $impact_summary,
+            r.affected_capability = $affected_capability,
+            r.operational_consequence = $operational_consequence,
+            r.confidence = $confidence,
+            r.reason = $reason,
+            r.source = "openai",
+            r.updated_at = datetime()
+
+        SET e.failure_impact_enriched = true,
+            e.failure_impact_enriched_at = datetime()
+        """
+
+        entity_body = """
         MERGE (level:FailureImpactLevel {level: $impact_level})
 
         MERGE (e)-[r:HAS_FAILURE_IMPACT]->(level)
@@ -76,6 +98,5 @@ class FailureImpactEnricher(BaseEnricher):
             e.failure_impact_enriched_at = datetime()
         """
 
-        with self.driver.session() as session:
-            for item in items:
-                session.run(query, **item)
+        for item in items:
+            self.execute_targeted_write(canonical_body, entity_body, item)

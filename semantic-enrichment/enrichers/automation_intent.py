@@ -34,7 +34,11 @@ class AutomationIntentEnricher(BaseEnricher):
             a.name AS name,
             collect(DISTINCT trigger.entity_id) AS triggers,
             collect(DISTINCT target.entity_id) AS targets,
-            collect(DISTINCT condition.entity_id) AS conditions
+            collect(DISTINCT condition.entity_id) AS conditions,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 

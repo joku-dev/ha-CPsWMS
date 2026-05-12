@@ -37,6 +37,9 @@ class SemanticRolesEnricher(BaseEnricher):
         """Fetch entities that have not yet been semantically classified."""
         query = """
         MATCH (e:Entity)
+        OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
+        OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
+
         WHERE coalesce(e.semantic_enriched, false) = false
         RETURN
             e.entity_id AS entity_id,
@@ -46,7 +49,11 @@ class SemanticRolesEnricher(BaseEnricher):
             e.icon AS icon,
             e.entity_category AS entity_category,
             e.platform AS platform,
-            e.is_problem AS is_problem
+            e.is_problem AS is_problem,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 
@@ -65,9 +72,47 @@ class SemanticRolesEnricher(BaseEnricher):
 
     def write_results(self, items):
         """Persist role/category/criticality relationships and audit event."""
-        query = """
-        MATCH (e:Entity {entity_id: $entity_id})
+        canonical_body = """
+        MERGE (role:SemanticRole {name: $semantic_role})
+        MERGE (category:SemanticCategory {name: $semantic_category})
+        MERGE (criticality:Criticality {level: $criticality})
 
+        MERGE (c)-[r1:HAS_SEMANTIC_ROLE]->(role)
+        SET r1.confidence = $confidence,
+            r1.reason = $reason,
+            r1.source = "openai",
+            r1.updated_at = datetime()
+
+        MERGE (c)-[r2:HAS_SEMANTIC_CATEGORY]->(category)
+        SET r2.confidence = $confidence,
+            r2.source = "openai",
+            r2.updated_at = datetime()
+
+        MERGE (c)-[r3:HAS_CRITICALITY]->(criticality)
+        SET r3.confidence = $confidence,
+            r3.source = "openai",
+            r3.updated_at = datetime()
+
+        CREATE (event:SemanticEnrichmentEvent {
+            event_id: randomUUID(),
+            enricher: "semantic_roles",
+            model: $model,
+            source: "openai",
+            confidence: $confidence,
+            reason: $reason,
+            created_at: datetime()
+        })
+
+        MERGE (e)-[:GENERATED_BY]->(event)
+        MERGE (event)-[:GENERATED_ROLE]->(role)
+        MERGE (event)-[:GENERATED_CATEGORY]->(category)
+        MERGE (event)-[:GENERATED_CRITICALITY]->(criticality)
+
+        SET e.semantic_enriched = true,
+            e.semantic_enriched_at = datetime()
+        """
+
+        entity_body = """
         MERGE (role:SemanticRole {name: $semantic_role})
         MERGE (category:SemanticCategory {name: $semantic_category})
         MERGE (criticality:Criticality {level: $criticality})
@@ -107,6 +152,5 @@ class SemanticRolesEnricher(BaseEnricher):
             e.semantic_enriched_at = datetime()
         """
 
-        with self.driver.session() as session:
-            for item in items:
-                session.run(query, model=OPENAI_MODEL, **item)
+        for item in items:
+            self.execute_targeted_write(canonical_body, entity_body, item)

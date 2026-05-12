@@ -19,6 +19,9 @@ class DependencyReasoningEnricher(BaseEnricher):
         """Fetch entity context used to infer semantic dependencies."""
         query = """
         MATCH (e:Entity)
+        OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
+        OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
+
         OPTIONAL MATCH (e)-[:BELONGS_TO_DOMAIN]->(d:Domain)
         OPTIONAL MATCH (e)-[:HAS_SEMANTIC_ROLE]->(role:SemanticRole)
         OPTIONAL MATCH (e)-[:EFFECTIVE_LOCATION]->(area:Area)
@@ -27,7 +30,11 @@ class DependencyReasoningEnricher(BaseEnricher):
             e.friendly_name AS friendly_name,
             d.name AS domain,
             role.name AS semantic_role,
-            area.name AS area
+            area.name AS area,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 

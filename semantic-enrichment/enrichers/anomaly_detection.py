@@ -24,6 +24,9 @@ class AnomalyDetectionEnricher(BaseEnricher):
         """Fetch entities that have not yet been anomaly-checked."""
         query = """
         MATCH (e:Entity)
+        OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
+        OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
+
         WHERE e.anomaly_checked IS NULL
            OR e.anomaly_checked = false
         OPTIONAL MATCH (ev:HomeAssistantEvent)-[:AFFECTED_ENTITY]->(e)
@@ -35,7 +38,11 @@ class AnomalyDetectionEnricher(BaseEnricher):
             e.state AS state,
             e.last_updated AS last_updated,
             e.is_problem AS is_problem,
-            recent_events AS recent_events
+            recent_events AS recent_events,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 
@@ -53,8 +60,20 @@ class AnomalyDetectionEnricher(BaseEnricher):
 
     def write_results(self, items):
         """Persist anomaly relationships with severity metadata."""
-        query = """
-        MATCH (e:Entity {entity_id: $entity_id})
+        canonical_body = """
+        MERGE (a:AnomalyType {name: $anomaly_type})
+        MERGE (c)-[r:HAS_ANOMALY]->(a)
+        SET r.severity = $severity,
+            r.confidence = $confidence,
+            r.reason = $reason,
+            r.source = "openai",
+            r.updated_at = datetime()
+
+        SET e.anomaly_checked = true,
+            e.anomaly_checked_at = datetime()
+        """
+
+        entity_body = """
         MERGE (a:AnomalyType {name: $anomaly_type})
         MERGE (e)-[r:HAS_ANOMALY]->(a)
         SET r.severity = $severity,
@@ -67,6 +86,5 @@ class AnomalyDetectionEnricher(BaseEnricher):
             e.anomaly_checked_at = datetime()
         """
 
-        with self.driver.session() as session:
-            for item in items:
-                session.run(query, **item)
+        for item in items:
+            self.execute_targeted_write(canonical_body, entity_body, item)

@@ -19,6 +19,9 @@ class RoomInferenceEnricher(BaseEnricher):
         """Select entities without explicit room assignment."""
         query = """
         MATCH (e:Entity)
+        OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
+        OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
+
         WHERE NOT (e)-[:LOCATED_IN]->(:Area)
           AND (e.room_inference_checked IS NULL OR e.room_inference_checked = false)
         RETURN
@@ -26,7 +29,11 @@ class RoomInferenceEnricher(BaseEnricher):
             e.friendly_name AS friendly_name,
             e.domain AS domain,
             e.platform AS platform,
-            e.icon AS icon
+            e.icon AS icon,
+        
+            raw.raw_entity_id AS raw_entity_id,
+            raw.source_entity_id AS source_entity_id,
+            c.canonical_id AS canonical_id
         LIMIT $limit
         """
 
@@ -44,8 +51,21 @@ class RoomInferenceEnricher(BaseEnricher):
 
     def write_results(self, items):
         """Write inferred room links and mark entities as processed."""
-        query = """
-        MATCH (e:Entity {entity_id: $entity_id})
+        canonical_body = """
+        MERGE (a:Area {area_id: $suggested_area})
+        SET a.name = $suggested_area
+
+        MERGE (c)-[r:INFERRED_LOCATION]->(a)
+        SET r.confidence = $confidence,
+            r.reason = $reason,
+            r.source = "openai",
+            r.updated_at = datetime()
+
+        SET e.room_inference_checked = true,
+            e.room_inference_checked_at = datetime()
+        """
+
+        entity_body = """
         MERGE (a:Area {area_id: $suggested_area})
         SET a.name = $suggested_area
 
@@ -59,6 +79,5 @@ class RoomInferenceEnricher(BaseEnricher):
             e.room_inference_checked_at = datetime()
         """
 
-        with self.driver.session() as session:
-            for item in items:
-                session.run(query, **item)
+        for item in items:
+            self.execute_targeted_write(canonical_body, entity_body, item)
