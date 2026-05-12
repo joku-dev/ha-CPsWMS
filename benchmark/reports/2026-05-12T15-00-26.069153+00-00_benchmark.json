@@ -1,0 +1,206 @@
+{
+  "benchmark_id": "2026-05-12T15-00-26.069153+00-00",
+  "target_name": "ha-CPsWMS",
+  "repo": "ha-CPsWMS",
+  "git_commit": "e4ccd6d92db19b8ba6065bbda9dbb632e626ec43",
+  "started_at": "2026-05-12T15:00:26.069153+00:00",
+  "finished_at": "2026-05-12T15:00:26.619925+00:00",
+  "technical_metrics": {
+    "sync_duration_seconds": null,
+    "enrichment_duration_seconds": null,
+    "total_runtime_seconds": 0.5503186720015947,
+    "entities_processed_total": 0,
+    "entities_per_second": 0.0,
+    "neo4j_write_duration_seconds": null,
+    "neo4j_read_duration_seconds": null,
+    "query_latency_avg_ms": null,
+    "query_latency_p50_ms": null,
+    "query_latency_p95_ms": null,
+    "query_latency_max_ms": null,
+    "query_latencies_ms": []
+  },
+  "graph_metrics": {
+    "node_count_total": 0,
+    "relationship_count_total": 0,
+    "node_count_by_label": {},
+    "relationship_count_by_type": {},
+    "avg_relationships_per_node": null,
+    "orphan_node_count": 0,
+    "entity_count": 0,
+    "raw_entity_count": 0,
+    "canonical_entity_count": 0,
+    "resolution_decision_count": 0,
+    "evidence_count": 0,
+    "canonical_coverage_ratio": 0.0,
+    "raw_to_canonical_resolution_ratio": 0.0,
+    "duplicate_candidate_count": 0,
+    "semantic_relationship_count": 0
+  },
+  "semantic_metrics": {
+    "semantic_role_coverage_ratio": 0.0,
+    "semantic_category_coverage_ratio": 0.0,
+    "criticality_coverage_ratio": 0.0,
+    "capability_coverage_ratio": 0.0,
+    "dependency_coverage_ratio": 0.0,
+    "causal_relation_coverage_ratio": 0.0,
+    "recommended_action_coverage_ratio": 0.0,
+    "simulation_readiness_coverage_ratio": 0.0,
+    "average_semantic_confidence": null,
+    "low_confidence_ratio": 0.0,
+    "high_confidence_ratio": 0.0,
+    "explainability_coverage_ratio": 0.0,
+    "conflicting_semantics_count": 0,
+    "confidence_relation_count": 0,
+    "explainable_relation_count": 0,
+    "semantic_relationship_count": 0
+  },
+  "query_metrics": {
+    "results": [
+      {
+        "query_name": "entity_count_by_domain",
+        "query_group": "baseline",
+        "cypher": "MATCH (e:Entity)\nRETURN e.domain AS domain, count(e) AS entity_count\nORDER BY entity_count DESC\nLIMIT 25",
+        "duration_ms": 3.4913650015369058,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "unavailable_entities",
+        "query_group": "baseline",
+        "cypher": "MATCH (e:Entity)\nWHERE e.state IN [\"unavailable\", \"unknown\", \"none\"]\nRETURN e.entity_id AS entity_id, e.friendly_name AS friendly_name, e.state AS state\nLIMIT 25",
+        "duration_ms": 3.0004559957887977,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "automation_entity_links",
+        "query_group": "baseline",
+        "cypher": "MATCH (a:Automation)-[r:TRIGGERED_BY|CONTROLS|HAS_CONDITION]->(e:Entity)\nRETURN a.automation_id AS automation_id, type(r) AS relation_type, e.entity_id AS entity_id\nLIMIT 25",
+        "duration_ms": 2.6843849918805063,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "raw_to_canonical_resolution",
+        "query_group": "canonical",
+        "cypher": "MATCH (raw:RawEntity)-[r:RESOLVED_TO]->(canonical:CanonicalEntity)\nRETURN raw.raw_entity_id AS raw_entity_id,\n       raw.source_entity_id AS source_entity_id,\n       canonical.canonical_id AS canonical_id,\n       r.confidence AS confidence\nLIMIT 25",
+        "duration_ms": 2.8484399954322726,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "canonical_entities_with_multiple_raw_representations",
+        "query_group": "canonical",
+        "cypher": "MATCH (canonical:CanonicalEntity)<-[:RESOLVED_TO]-(raw:RawEntity)\nWITH canonical, count(raw) AS raw_count\nWHERE raw_count > 1\nRETURN canonical.canonical_id AS canonical_id, canonical.canonical_name AS canonical_name, raw_count\nLIMIT 25",
+        "duration_ms": 3.168947994709015,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "canonical_semantic_roles",
+        "query_group": "canonical",
+        "cypher": "MATCH (canonical:CanonicalEntity)-[r:HAS_SEMANTIC_ROLE]->(role:SemanticRole)\nRETURN canonical.canonical_id AS canonical_id, role.name AS role, r.confidence AS confidence\nLIMIT 25",
+        "duration_ms": 2.5982349761761725,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "critical_entities",
+        "query_group": "semantic",
+        "cypher": "MATCH (e:Entity)-[:HAS_CRITICALITY]->(c:Criticality)\nRETURN e.entity_id AS entity_id, e.friendly_name AS friendly_name, c.level AS criticality\nLIMIT 25",
+        "duration_ms": 3.189152979757637,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "semantic_roles",
+        "query_group": "semantic",
+        "cypher": "MATCH (e:Entity)-[r:HAS_SEMANTIC_ROLE]->(role:SemanticRole)\nRETURN e.entity_id AS entity_id, role.name AS role, r.confidence AS confidence\nLIMIT 25",
+        "duration_ms": 3.0504390015266836,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "lighting_capabilities",
+        "query_group": "semantic",
+        "cypher": "MATCH (e:Entity)-[r:PROVIDES_CAPABILITY]->(cap:Capability)\nWHERE toLower(cap.name) CONTAINS \"lighting\"\nRETURN e.entity_id AS entity_id, cap.name AS capability, r.confidence AS confidence\nLIMIT 25",
+        "duration_ms": 2.9477660136763006,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "dependency_links",
+        "query_group": "semantic",
+        "cypher": "MATCH (source)-[r:DEPENDS_ON|IMPACTS|DEGRADES|RECOVERS|CAUSES]->(target)\nRETURN labels(source) AS source_labels,\n       coalesce(source.entity_id, source.canonical_id, source.name, source.automation_id) AS source_id,\n       type(r) AS relation_type,\n       labels(target) AS target_labels,\n       coalesce(target.entity_id, target.canonical_id, target.name, target.automation_id) AS target_id\nLIMIT 25",
+        "duration_ms": 4.144128994084895,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "recommended_actions",
+        "query_group": "semantic",
+        "cypher": "MATCH (e:Entity)-[r:HAS_RECOMMENDED_ACTION]->(action:RecommendedActionType)\nRETURN e.entity_id AS entity_id, action.name AS action, r.priority AS priority, r.confidence AS confidence\nLIMIT 25",
+        "duration_ms": 5.733269004849717,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      },
+      {
+        "query_name": "simulation_readiness",
+        "query_group": "semantic",
+        "cypher": "MATCH (scenario:SimulationScenario)-[r:HAS_SIMULATION_READINESS]->(level:SimulationReadinessLevel)\nRETURN scenario.scenario_id AS scenario_id, level.name AS readiness, r.coverage_score AS coverage_score\nLIMIT 25",
+        "duration_ms": 4.274803010048345,
+        "result_count": 0,
+        "success": false,
+        "error_message": "Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+      }
+    ],
+    "query_success_ratio": 0.0,
+    "query_answerability_ratio": 0.0,
+    "query_latency_p50_ms": null,
+    "query_latency_p95_ms": null
+  },
+  "llm_metrics": {
+    "llm_calls_total": 0,
+    "llm_calls_by_enricher": {},
+    "llm_errors_total": 0,
+    "llm_retry_count": 0,
+    "llm_prompt_tokens_total": null,
+    "llm_completion_tokens_total": null,
+    "llm_tokens_total": null,
+    "estimated_llm_cost": null,
+    "average_llm_latency_ms": null,
+    "llm_latency_p95_ms": null
+  },
+  "scores": {
+    "semantic_score": 0.0,
+    "world_model_score": 0.0,
+    "semantic_value_per_second": 0.0,
+    "semantic_value_per_llm_call": null,
+    "semantic_value_per_1000_tokens": null,
+    "world_model_value_per_second": 0.0,
+    "missing_semantic_score_inputs": [
+      "average_semantic_confidence"
+    ]
+  },
+  "warnings": [
+    "Structured LLM telemetry is not available; token, latency and cost metrics are null or zero.",
+    "Neo4j graph appears to be empty.",
+    "CanonicalEntity layer was not detected.",
+    "No confidence properties were found on semantic relationships."
+  ],
+  "errors": [
+    "Graph metrics collection failed: Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known",
+    "Semantic metrics collection failed: Failed to DNS resolve address neo4j:7687: [Errno 8] nodename nor servname provided, or not known"
+  ]
+}
