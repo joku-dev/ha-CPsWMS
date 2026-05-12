@@ -1,13 +1,14 @@
-# Home Assistant -> Neo4j Sync + Semantic Enrichment
+# HA-CPsWMS: Semantic Identity Layer + Neo4j World Model
 
-Dieses Projekt synchronisiert Home-Assistant-Daten nach Neo4j und erweitert den Graph anschliessend mit LLM-basierten semantischen Beziehungen.
+Dieses Projekt erweitert die bestehende Home-Assistant-zu-Neo4j-Synchronisation um eine
+quelle-unabhängige semantische Identitätsschicht. Der neue Kern bildet Raw Entities,
+Canonical Entities, Evidenzen und Review-Entscheidungen ab und ermöglicht damit
+eine stabilere, wiedererkennbare Modellierung von Geräten, Sensoren und Beobachtungen.
 
-Kurz gesagt: Dieses Repository baut ein semantisches World Model fuer Home Assistant.
-Es sammelt Entities, Automationen, Integrationen und Ereignisse, modelliert daraus
-Faehigkeiten, Fehlerfolgen, Zeitverlaeufe und Kausalbeziehungen und stellt diese
-Informationen ueber eine Query API sowie eine Chat-Schnittstelle bereit. Ziel ist,
-Fragen wie "Was passiert, wenn Zigbee ausfaellt?" oder "Welche Automation haengt
-an diesem Sensor?" strukturiert aus dem Graph beantworten zu koennen.
+Kurz gesagt: Dieses Repository baut ein semantisches World Model, das Home Assistant
+als einen von mehreren möglichen Quellen behandelt. Es unterstützt die Zuordnung
+von Rohdaten zu stabilen Identitäten und legt damit die Grundlage für spätere
+Ontologie-, Zeit- und Kausalmodellierung.
 
 ## Komponenten
 
