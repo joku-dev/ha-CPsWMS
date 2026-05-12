@@ -229,10 +229,17 @@ class BaseEnricher(ABC):
 
     def run_once(self):
         """Run one enrichment iteration for the current enricher."""
-        print(f"[{self.name}] Enrichment target mode: {self.target_resolver.get_mode()}")
+        mode = self.target_resolver.get_mode()
+        print(f"[{self.name}] Enrichment target mode: {mode}")
         print(f"[{self.name}] Selecting candidates...")
 
-        items = self.filter_target_ready_candidates(self.get_candidates(BATCH_SIZE))
+        candidate_limit = BATCH_SIZE
+        if mode != "entity_first":
+            candidate_limit = max(BATCH_SIZE, BATCH_SIZE * 50)
+
+        items = self.filter_target_ready_candidates(
+            self.get_candidates(candidate_limit)
+        )[:BATCH_SIZE]
 
         print(f"[{self.name}] Candidates found: {len(items)}")
 

@@ -27,10 +27,15 @@ class CapabilityMappingEnricher(BaseEnricher):
         OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
         OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
 
-        WHERE coalesce(e.capability_mapped, false) = false
-        OPTIONAL MATCH (e)-[:HAS_SEMANTIC_ROLE]->(role:SemanticRole)
-        OPTIONAL MATCH (e)-[:HAS_SEMANTIC_CATEGORY]->(category:SemanticCategory)
-        OPTIONAL MATCH (e)-[:HAS_CRITICALITY]->(criticality:Criticality)
+        WHERE
+            (c IS NOT NULL AND coalesce(c.capability_mapped, false) = false)
+            OR (c IS NULL AND coalesce(e.capability_mapped, false) = false)
+        OPTIONAL MATCH (c)-[:HAS_SEMANTIC_ROLE]->(canonical_role:SemanticRole)
+        OPTIONAL MATCH (e)-[:HAS_SEMANTIC_ROLE]->(entity_role:SemanticRole)
+        OPTIONAL MATCH (c)-[:HAS_SEMANTIC_CATEGORY]->(canonical_category:SemanticCategory)
+        OPTIONAL MATCH (e)-[:HAS_SEMANTIC_CATEGORY]->(entity_category:SemanticCategory)
+        OPTIONAL MATCH (c)-[:HAS_CRITICALITY]->(canonical_criticality:Criticality)
+        OPTIONAL MATCH (e)-[:HAS_CRITICALITY]->(entity_criticality:Criticality)
         OPTIONAL MATCH (e)-[:HAS_DEVICE_CLASS]->(device_class:DeviceClass)
         OPTIONAL MATCH (e)-[:EFFECTIVE_LOCATION]->(area:Area)
         OPTIONAL MATCH (e)-[impact_rel:HAS_FAILURE_IMPACT]->(impact:FailureImpactLevel)
@@ -39,9 +44,11 @@ class CapabilityMappingEnricher(BaseEnricher):
         OPTIONAL MATCH (e)<-[:HAS_CONDITION]-(condition:Automation)
         WITH
             e,
-            role,
-            category,
-            criticality,
+            raw,
+            c,
+            coalesce(canonical_role, entity_role) AS role,
+            coalesce(canonical_category, entity_category) AS category,
+            coalesce(canonical_criticality, entity_criticality) AS criticality,
             device_class,
             area,
             collect(DISTINCT impact_rel.affected_capability) AS affected_capabilities,
@@ -111,7 +118,9 @@ class CapabilityMappingEnricher(BaseEnricher):
             r.source = "openai",
             r.updated_at = datetime()
 
-        SET e.capability_mapped = true,
+        SET c.capability_mapped = true,
+            c.capability_mapped_at = datetime(),
+            e.capability_mapped = true,
             e.capability_mapped_at = datetime()
         """
 

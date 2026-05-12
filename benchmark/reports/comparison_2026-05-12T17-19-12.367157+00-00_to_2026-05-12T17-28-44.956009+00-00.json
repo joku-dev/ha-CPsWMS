@@ -1,0 +1,44 @@
+{
+  "runtime": {
+    "baseline": 2.3277187409985345,
+    "target": 1.6218164890015032,
+    "delta": -0.7059022519970313,
+    "delta_percent": -30.325925532318244
+  },
+  "semantic_score": {
+    "baseline": 0.1415644810390619,
+    "target": 0.15095920533776008,
+    "delta": 0.00939472429869817,
+    "delta_percent": 6.636356965915683
+  },
+  "world_model_score": {
+    "baseline": 0.775095392990309,
+    "target": 0.7667691333548741,
+    "delta": -0.008326259635434985,
+    "delta_percent": -1.0742238582160024
+  },
+  "query_answerability": {
+    "baseline": 0.8333333333333334,
+    "target": 0.8333333333333334,
+    "delta": 0.0,
+    "delta_percent": 0.0
+  },
+  "canonical_coverage": {
+    "baseline": 1.0,
+    "target": 1.0,
+    "delta": 0.0,
+    "delta_percent": 0.0
+  },
+  "llm_cost": {
+    "baseline": null,
+    "target": null,
+    "delta": null,
+    "delta_percent": null
+  },
+  "semantic_value_per_second": {
+    "baseline": 0.06081683261197365,
+    "target": 0.09308032466157777,
+    "delta": 0.032263492049604124,
+    "delta_percent": 53.05026694739784
+  }
+}

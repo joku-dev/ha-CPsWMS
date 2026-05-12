@@ -20,7 +20,6 @@ class CausalDependencyEnricher(BaseEnricher):
     }
 
     node_matchers = {
-        "entity": "MATCH ({var}:Entity {{entity_id: ${param}}})",
         "automation": "MATCH ({var}:Automation {{automation_id: ${param}}})",
         "capability": "MERGE ({var}:Capability {{name: ${param}}})",
         "incident": "MATCH ({var}:Incident {{incident_id: ${param}}})",
@@ -42,26 +41,73 @@ class CausalDependencyEnricher(BaseEnricher):
         OPTIONAL MATCH (e)-[:HAS_RAW_REPRESENTATION]->(raw:RawEntity)
         OPTIONAL MATCH (raw)-[:RESOLVED_TO]->(c:CanonicalEntity)
 
-        WHERE coalesce(e.causal_dependency_enriched, false) = false
-        MATCH (e)-[:HAS_SEMANTIC_ROLE]->(role:SemanticRole)
-        MATCH (e)-[:HAS_SEMANTIC_CATEGORY]->(category:SemanticCategory)
-        MATCH (e)-[:HAS_TIMELINE_EVENT]->(:TimelineEvent)
-
-        MATCH (e)-[impact_rel:HAS_FAILURE_IMPACT]->(impact:FailureImpactLevel)
-        WHERE impact_rel.affected_capability IS NOT NULL
-        OPTIONAL MATCH (e)-[provides_rel:PROVIDES_CAPABILITY]->(provided_capability:Capability)
-        OPTIONAL MATCH (e)-[:EFFECTIVE_LOCATION]->(area:Area)
+        WHERE
+            (c IS NOT NULL AND coalesce(c.causal_dependency_enriched, false) = false)
+            OR (c IS NULL AND coalesce(e.causal_dependency_enriched, false) = false)
+        OPTIONAL MATCH (c)-[:HAS_SEMANTIC_ROLE]->(canonical_role:SemanticRole)
+        OPTIONAL MATCH (e)-[:HAS_SEMANTIC_ROLE]->(entity_role:SemanticRole)
+        OPTIONAL MATCH (c)-[:HAS_SEMANTIC_CATEGORY]->(canonical_category:SemanticCategory)
+        OPTIONAL MATCH (e)-[:HAS_SEMANTIC_CATEGORY]->(entity_category:SemanticCategory)
         WITH
             e,
+            raw,
+            c,
+            coalesce(canonical_role, entity_role) AS role,
+            coalesce(canonical_category, entity_category) AS category
+        WHERE role IS NOT NULL AND category IS NOT NULL
+
+        OPTIONAL MATCH (c)-[:HAS_TIMELINE_EVENT]->(canonical_timeline_probe:TimelineEvent)
+        OPTIONAL MATCH (e)-[:HAS_TIMELINE_EVENT]->(entity_timeline_probe:TimelineEvent)
+        WITH e, raw, c, role, category, canonical_timeline_probe, entity_timeline_probe
+        WHERE canonical_timeline_probe IS NOT NULL OR entity_timeline_probe IS NOT NULL
+        WITH DISTINCT e, raw, c, role, category
+
+        OPTIONAL MATCH (c)-[canonical_impact_rel:HAS_FAILURE_IMPACT]->(canonical_impact:FailureImpactLevel)
+        OPTIONAL MATCH (e)-[entity_impact_rel:HAS_FAILURE_IMPACT]->(entity_impact:FailureImpactLevel)
+        WITH
+            e,
+            raw,
+            c,
+            role,
+            category,
+            coalesce(canonical_impact, entity_impact) AS impact,
+            collect(DISTINCT canonical_impact_rel.affected_capability)
+                + collect(DISTINCT entity_impact_rel.affected_capability) AS impact_capabilities
+        WHERE size([capability IN impact_capabilities WHERE capability IS NOT NULL]) > 0
+
+        OPTIONAL MATCH (c)-[:PROVIDES_CAPABILITY]->(canonical_provided_capability:Capability)
+        OPTIONAL MATCH (e)-[:PROVIDES_CAPABILITY]->(entity_provided_capability:Capability)
+        OPTIONAL MATCH (c)-[:EFFECTIVE_LOCATION]->(canonical_area:Area)
+        OPTIONAL MATCH (e)-[:EFFECTIVE_LOCATION]->(entity_area:Area)
+        WITH
+            e,
+            raw,
+            c,
+            role,
+            category,
+            coalesce(canonical_area, entity_area) AS area,
+            impact,
+            impact_capabilities,
+            collect(DISTINCT canonical_provided_capability.name)
+                + collect(DISTINCT entity_provided_capability.name) AS provided_capabilities
+        WITH
+            e,
+            raw,
+            c,
             role,
             category,
             area,
             impact,
-            collect(DISTINCT impact_rel.affected_capability) + collect(DISTINCT provided_capability.name) AS raw_capabilities
+            impact_capabilities + provided_capabilities AS raw_capabilities
 
         CALL {
-            WITH e
-            OPTIONAL MATCH (e)-[:HAS_TIMELINE_EVENT]->(te:TimelineEvent)
+            WITH e, c
+            OPTIONAL MATCH (c)-[:HAS_TIMELINE_EVENT]->(canonical_te:TimelineEvent)
+            OPTIONAL MATCH (e)-[:HAS_TIMELINE_EVENT]->(entity_te:TimelineEvent)
+            WITH collect(DISTINCT canonical_te) + collect(DISTINCT entity_te) AS events
+            UNWIND events AS te
+            WITH DISTINCT te
+            WHERE te IS NOT NULL
             RETURN collect(DISTINCT {
                 event_type: te.event_type,
                 summary: te.summary,
@@ -264,19 +310,27 @@ class CausalDependencyEnricher(BaseEnricher):
         source_type = item["source_type"]
         target_type = item["target_type"]
 
-        source_clause = self.node_matchers[source_type].format(
-            var="source",
-            param="source_id",
+        source_clause, source_expression = self.build_node_reference(
+            source_type,
+            "source",
+            "source_id",
         )
-        target_clause = self.node_matchers[target_type].format(
-            var="target",
-            param="target_id",
+        target_clause, target_expression = self.build_node_reference(
+            target_type,
+            "target",
+            "target_id",
         )
 
         return f"""
         MATCH (context:Entity {{entity_id: $context_entity_id}})
+        OPTIONAL MATCH (context)-[:HAS_RAW_REPRESENTATION]->(:RawEntity)-[:RESOLVED_TO]->(context_canonical:CanonicalEntity)
         {source_clause}
         {target_clause}
+        WITH
+            context,
+            context_canonical,
+            {source_expression} AS source,
+            {target_expression} AS target
 
         MERGE (source)-[r:{relationship_type}]->(target)
         SET r.causal_stage = $causal_stage,
@@ -291,4 +345,24 @@ class CausalDependencyEnricher(BaseEnricher):
 
         SET context.causal_dependency_enriched = true,
             context.causal_dependency_enriched_at = datetime()
+        FOREACH (_ IN CASE WHEN context_canonical IS NULL THEN [] ELSE [1] END |
+            SET context_canonical.causal_dependency_enriched = true,
+                context_canonical.causal_dependency_enriched_at = datetime()
+        )
         """
+
+    def build_node_reference(self, node_type, variable, parameter):
+        """Return a safe node match clause and canonical-aware node expression."""
+        if node_type == "entity":
+            return (
+                f"""
+        MATCH ({variable}_entity:Entity {{entity_id: ${parameter}}})
+        OPTIONAL MATCH ({variable}_entity)-[:HAS_RAW_REPRESENTATION]->(:RawEntity)-[:RESOLVED_TO]->({variable}_canonical:CanonicalEntity)
+                """,
+                f"coalesce({variable}_canonical, {variable}_entity)",
+            )
+
+        return (
+            self.node_matchers[node_type].format(var=variable, param=parameter),
+            variable,
+        )

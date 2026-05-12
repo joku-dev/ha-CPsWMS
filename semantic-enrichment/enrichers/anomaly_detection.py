@@ -30,7 +30,7 @@ class AnomalyDetectionEnricher(BaseEnricher):
         WHERE e.anomaly_checked IS NULL
            OR e.anomaly_checked = false
         OPTIONAL MATCH (ev:HomeAssistantEvent)-[:AFFECTED_ENTITY]->(e)
-        WITH e, collect(ev.message)[0..10] AS recent_events
+        WITH e, raw, c, collect(ev.message)[0..10] AS recent_events
         RETURN
             e.entity_id AS entity_id,
             e.friendly_name AS friendly_name,

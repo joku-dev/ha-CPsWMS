@@ -56,9 +56,9 @@ class TemporalEventModelEnricher(BaseEnricher):
         WHERE coalesce(e.temporal_event_modeled, false) = false
 
         OPTIONAL MATCH (ev:HomeAssistantEvent)-[:AFFECTED_ENTITY]->(e)
-        WITH e, ev
+        WITH e, raw, c, ev
         ORDER BY ev.when DESC
-        WITH e, collect(DISTINCT {
+        WITH e, raw, c, collect(DISTINCT {
             when: toString(ev.when),
             name: ev.name,
             message: ev.message
