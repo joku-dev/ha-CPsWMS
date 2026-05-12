@@ -7,12 +7,27 @@ Entity, Room, DeviceClass und Unit angelegt und Beziehungen erstellt.
 
 import os
 import re
+import sys
 import json
 import time
 import yaml
 import requests
 import websocket
+from pathlib import Path
 from neo4j import GraphDatabase
+
+# Expose repository root so local packages can be imported when running from ha-sync
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
+
+from semantic_core.identity.canonical_registry import CanonicalRegistry
+from semantic_core.identity.confidence_model import ConfidenceModel
+from semantic_core.identity.identity_resolver import IdentityResolver
+from semantic_core.identity.resolution_pipeline import ResolutionPipeline
+from semantic_core.identity.models import RawEntity as SemanticRawEntity, SourceSystem
+from sources.homeassistant.adapter import HomeAssistantAdapter
+from storage.neo4j.repository import Neo4jRepository
+from storage.neo4j.writer import SemanticCoreWriter
 
 
 HA_URL = os.environ["HA_URL"].rstrip("/")
@@ -28,6 +43,8 @@ AUTOMATIONS_YAML_PATH = os.getenv("AUTOMATIONS_YAML_PATH", "/config/automations.
 ENABLE_EVENT_HISTORY = os.getenv("ENABLE_EVENT_HISTORY", "true").lower() == "true"
 ENABLE_MQTT_MODEL = os.getenv("ENABLE_MQTT_MODEL", "true").lower() == "true"
 ENABLE_ZIGBEE_MODEL = os.getenv("ENABLE_ZIGBEE_MODEL", "true").lower() == "true"
+ENABLE_SEMANTIC_IDENTITY = os.getenv("ENABLE_SEMANTIC_IDENTITY", "true").lower() == "true"
+SEMANTIC_SOURCE_TRUST = float(os.getenv("SEMANTIC_SOURCE_TRUST", "0.8"))
 
 ENTITY_ID_PATTERN = re.compile(r"\b[a-zA-Z_]+\.[a-zA-Z0-9_]+\b")
 
@@ -205,6 +222,11 @@ def create_constraints(driver):
         ("Problem", "problem_id"),
         ("MqttTopic", "topic"),
         ("ZigbeeNode", "ieee"),
+        ("SourceSystem", "source_id"),
+        ("RawEntity", "raw_entity_id"),
+        ("CanonicalEntity", "canonical_id"),
+        ("ResolutionDecision", "decision_id"),
+        ("Evidence", "evidence_id"),
     ]
 
     with driver.session() as session:
@@ -214,6 +236,32 @@ def create_constraints(driver):
             FOR (n:{label})
             REQUIRE n.{prop} IS UNIQUE
             """)
+
+
+def create_semantic_components():
+    registry = CanonicalRegistry()
+    confidence_model = ConfidenceModel()
+    resolver = IdentityResolver(registry, confidence_model)
+    pipeline = ResolutionPipeline(registry, resolver)
+    repository = Neo4jRepository(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
+    writer = SemanticCoreWriter(repository)
+    adapter = HomeAssistantAdapter(source_id="homeassistant")
+    source_system = SourceSystem(
+        source_id="homeassistant",
+        source_type="homeassistant",
+        name="Home Assistant",
+        trust_level=SEMANTIC_SOURCE_TRUST,
+        metadata={}
+    )
+    return pipeline, writer, adapter, source_system
+
+
+def sync_entity_semantic(session, entity, registry_by_entity_id, pipeline, writer, adapter, source_system):
+    raw_entity = adapter.convert_entity(entity)
+    decision = pipeline.process(raw_entity, source_trust=SEMANTIC_SOURCE_TRUST)
+    canonical_entity = pipeline.registry.get_entity(decision.canonical_id) if decision.canonical_id else None
+    writer.write_resolution_result(raw_entity, canonical_entity, decision, source_system=source_system, session=session)
+    return decision
 
 
 def sync_floors(tx, floors):
@@ -635,14 +683,25 @@ def run_sync(driver):
         if item.get("entity_id")
     }
 
+    semantic_components = None
+    if ENABLE_SEMANTIC_IDENTITY:
+        semantic_components = create_semantic_components()
+
     with driver.session() as session:
         session.execute_write(sync_floors, floor_registry)
         session.execute_write(sync_areas, area_registry)
         session.execute_write(sync_integrations, config_entries)
         session.execute_write(sync_devices, device_registry)
 
+        if ENABLE_SEMANTIC_IDENTITY and semantic_components is not None:
+            pipeline, writer, adapter, source_system = semantic_components
+            writer.write_source_system(source_system, session=session)
+
         for entity in states:
             session.execute_write(sync_entity, entity, registry_by_entity_id)
+            if ENABLE_SEMANTIC_IDENTITY and semantic_components is not None:
+                pipeline, writer, adapter, source_system = semantic_components
+                sync_entity_semantic(session, entity, registry_by_entity_id, pipeline, writer, adapter, source_system)
 
         session.execute_write(sync_automations_from_states, states)
         session.execute_write(sync_automations_from_yaml, automations_yaml)

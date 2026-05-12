@@ -25,6 +25,7 @@ an diesem Sensor?" strukturiert aus dem Graph beantworten zu koennen.
 - `query-api/`: HTTP-API fuer semantische Graph-Abfragen
 - `world-model-chat/`: FastAPI-Chat-Schicht ueber dem Neo4j-World-Model
 - `docs/`: Architektur, Deployment, FAQ und Enrichment-Doku
+- `docs/CANONICAL_ENTITY_LAYER.md`: Dokumentation der neuen semantischen Identitätsschicht
 - `.env.example`: Beispielkonfiguration
 
 ## Schnellstart
