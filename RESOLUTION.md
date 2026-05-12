@@ -227,6 +227,7 @@ Nach jedem Eingriff wurde ein Benchmark erzeugt und mit dem vorherigen Stand ver
 Wichtige Report-Dateien:
 
 - `benchmark/reports/2026-05-12T17-36-04.751008+00-00_benchmark.md`
+- `benchmark/reports/2026-05-12T17-47-36.351900+00-00_benchmark.md`
 - `benchmark/reports/performance_evolution_summary.md`
 
 ### Deterministische Backfills
@@ -236,6 +237,7 @@ Die groessten Spruenge kamen nicht aus neuen Prompts, sondern aus materialisiert
 - Canonical-Semantik spiegeln
 - Dependency-Kanten aus `PROVIDED_BY` ableiten
 - Capability-Kanten aus Domains und vorhandenen Capabilities ableiten
+- Causal- und Simulation-Readiness-Kanten aus `DEGRADES`, `HAS_FAILURE_IMPACT`, Incidents und Automation-/`CAN_CAUSE`-Beziehungen ableiten
 
 ### Canonical-first reparieren statt umgehen
 
@@ -249,17 +251,50 @@ Da das LLM-Budget begrenzt war, wurden robuste und guenstige Basisschichten zuer
 
 Der letzte Benchmark zeigt:
 
-- Semantic Score: `0.7827`
-- World Model Score: `0.9363`
+- Semantic Score: `0.8751`
+- World Model Score: `0.9462`
 - Canonical Coverage: `1.0000`
 - Raw-to-Canonical Resolution: `1.0000`
 - Semantic Role Coverage: `0.9949`
 - Capability Coverage: `0.9949`
 - Dependency Coverage: `0.9696`
-- Causal Relation Coverage: `0.0017`
+- Causal Relation Coverage: `0.0354`
+- Simulation Readiness Coverage: `1.0000`
 - Query Answerability: `0.9167`
 
-Damit ist die Semantik-Basis stabil. Der verbleibende Engpass ist Causal/Simulation Readiness.
+Damit ist die Semantik-Basis stabil und Simulation Readiness ist fuer Canonical Targets breit initialisiert. Der verbleibende Engpass ist die Tiefe der Causal Chains, vor allem echte Automation-Pfade und zeitlich validierte Ursache-Wirkung-Beziehungen.
+
+## Nachtrag: Causal- und Simulation-Readiness-Backfill
+
+Nach der Stabilisierung der Basissemantik wurde ein weiterer deterministischer Backfill eingefuehrt:
+
+- `scripts/backfill_causal_simulation_edges.py`
+
+Das Skript materialisiert:
+
+- `HAS_CAUSAL_DEPENDENCY` aus bestehenden `DEGRADES`-Kanten.
+- `CAUSES` aus Problem-Entities mit `HAS_FAILURE_IMPACT`.
+- `HAS_CAUSAL_DEPENDENCY` aus `HAS_INCIDENT`.
+- `CAUSES` aus `TRIGGERED_BY`/`CONTROLS` und `CAN_CAUSE`, falls Automation-Kanten vorhanden sind.
+- `SimulationScenario`- und `HAS_SIMULATION_READINESS`-Kanten fuer Canonical Entities mit ausreichender Basis-, Dependency- und Causal-Evidence.
+
+Der Backfill erzeugte im aktuellen Graph:
+
+- `37` Degradation-Causal-Dependencies
+- `1` Problem-Failure-Cause
+- `7` Incident-Causal-Dependencies
+- `575` Canonical Simulation-Readiness-Baselines
+
+Automation-Causal-Edges blieben bei `0`, weil in der aktuellen Neo4j-Instanz keine `TRIGGERED_BY`, `CONTROLS` oder `HAS_CONDITION`-Kanten vorhanden waren. Das ist kein Fehler des Backfills, sondern zeigt, dass die Automation-Definitionen im aktuellen Sync-Datensatz fehlen oder noch nicht erfolgreich importiert wurden.
+
+Der Benchmark danach:
+
+- Semantic Score: `0.7827` -> `0.8751`
+- World Model Score: `0.9363` -> `0.9462`
+- Causal Relation Coverage: `0.0017` -> `0.0354`
+- Simulation Readiness Coverage: `0.0691` -> `1.0000`
+
+Lesson Learned: Simulation Readiness kann deterministisch breit initialisiert werden, aber hochwertige Causal Chains brauchen weiterhin konkrete Automation- und Timeline-Evidence.
 
 ## Naechste empfohlene Schritte
 
@@ -268,7 +303,7 @@ Damit ist die Semantik-Basis stabil. Der verbleibende Engpass ist Causal/Simulat
    - `CONTROLS`
    - `HAS_CONDITION`
 
-2. Aus vorhandenen `DEGRADES`, `HAS_FAILURE_IMPACT`, `HAS_INCIDENT` und `HAS_TIMELINE_EVENT` vorsichtige Causal-Kandidaten ableiten.
+2. Sicherstellen, dass `AUTOMATIONS_YAML_PATH` auf die echte Home-Assistant-Automation-Datei zeigt und der Sync diese Definitionen importiert.
 
 3. Causal-Enricher mit besserem Kontext versorgen:
    - vorhandene Dependency-Pfade
@@ -276,7 +311,10 @@ Damit ist die Semantik-Basis stabil. Der verbleibende Engpass ist Causal/Simulat
    - Incidents
    - zeitliche Reihenfolge
 
-4. Simulation Readiness erneut laufen lassen und pruefen, ob `not_ready` in Richtung `partial` steigt.
+4. Simulation Readiness qualitativ auswerten:
+   - wie viele Szenarien sind `partial`
+   - welche `missing_data`-Felder dominieren
+   - welche High-Impact-Pfade fehlen
 
 5. Neo4j-Warnungen bereinigen:
    - deprecated `CALL { WITH ... }` Syntax auf moderne Variable-Scope-Subqueries umstellen

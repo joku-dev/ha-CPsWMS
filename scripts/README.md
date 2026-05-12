@@ -7,6 +7,7 @@ Enthaltene Dateien:
 - `backfill_canonical_semantics.py`: Migriert bestehende semantische Beziehungen von `Entity` auf die zugeordnete `CanonicalEntity`.
 - `backfill_dependency_edges.py`: Leitet deterministische `DEPENDS_ON`-, `IMPACTS`- und `DEGRADES`-Kanten aus vorhandenen Integrations-, Capability- und Failure-Impact-Fakten ab.
 - `backfill_domain_semantics.py`: Ergänzt konservative Rollen, Kategorien und Capabilities aus Home-Assistant-Domains, wenn die Canonical-Ebene noch zu dünn ist.
+- `backfill_causal_simulation_edges.py`: Materialisiert vorsichtige Causal- und Simulation-Readiness-Kanten aus `DEGRADES`, `HAS_FAILURE_IMPACT`, Incidents und Automation-/`CAN_CAUSE`-Beziehungen.
 
 ## Funktionen
 

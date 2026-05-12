@@ -13,6 +13,7 @@
 - `2026-05-12T17-28-44.956009+00-00_benchmark.json`
 - `2026-05-12T17-32-12.623429+00-00_benchmark.json`
 - `2026-05-12T17-36-04.751008+00-00_benchmark.json`
+- `2026-05-12T17-47-36.351900+00-00_benchmark.json`
 
 ## Generated comparison files
 - `comparison_2026-05-12T13-00-50.948067+00-00_to_2026-05-12T14-21-45.116455+00-00.json`
@@ -26,6 +27,7 @@
 - `comparison_2026-05-12T17-19-12.367157+00-00_to_2026-05-12T17-28-44.956009+00-00.json`
 - `comparison_2026-05-12T17-28-44.956009+00-00_to_2026-05-12T17-32-12.623429+00-00.json`
 - `comparison_2026-05-12T17-32-12.623429+00-00_to_2026-05-12T17-36-04.751008+00-00.json`
+- `comparison_2026-05-12T17-36-04.751008+00-00_to_2026-05-12T17-47-36.351900+00-00.json`
 
 ## Summary of results
 
@@ -93,6 +95,12 @@
 - `world_model_score` changed by +14.4%
 - `query_answerability` changed by +10.0%
 - `semantic_value_per_second` changed by +90.1%
+
+### 2026-05-12T17-36-04.751008+00-00 → 2026-05-12T17-47-36.351900+00-00
+- `runtime` changed by +15.9%
+- `semantic_score` changed by +11.8%
+- `world_model_score` changed by +1.1%
+- `semantic_value_per_second` changed by -3.6%
 
 ## Notes
 - This summary is automatically generated after each benchmark run.
