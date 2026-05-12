@@ -8,6 +8,19 @@ on:
 jobs:
   validate-ubuntu:
     runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: neo4j:latest
+        env:
+          NEO4J_AUTH: neo4j/ci_dummy_password
+        ports:
+          - 7474:7474
+          - 7687:7687
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p ci_dummy_password 'RETURN 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
     env:
       HA_URL: http://127.0.0.1:8123
       HA_TOKEN: ci_dummy_token
@@ -28,12 +41,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install pytest
           pip install -r ha-sync/requirements.txt
           pip install -r semantic-enrichment/requirements.txt
 
       - name: Python syntax checks
         run: |
-          python -m compileall -q ha-sync semantic-enrichment scripts
+          python -m compileall -q benchmark ha-sync query-api scripts semantic-enrichment semantic_core sources storage tests world-model-chat
 
       - name: Validate enrichment wiring
         run: |
@@ -56,8 +70,11 @@ jobs:
               "enrichers.room_inference",
               "enrichers.dependency_reasoning",
               "enrichers.failure_impact",
+              "enrichers.capability_mapping",
+              "enrichers.causal_dependency",
               "enrichers.semantic_descriptions",
               "enrichers.recommended_actions",
+              "enrichers.simulation_readiness",
           ]
 
           for module_name in modules:
@@ -65,10 +82,57 @@ jobs:
               print(f"Imported: {module_name}")
           PY
 
+      - name: Run tests
+        run: |
+          python -m pytest tests -q
+
       - name: Validate Docker Compose
         run: |
           docker compose -f docker-compose.yml config > /tmp/compose-config.txt
           test -s /tmp/compose-config.txt
+
+      - name: Wait for Neo4j
+        run: |
+          python - <<'PY'
+          import os
+          import time
+          from neo4j import GraphDatabase
+
+          deadline = time.time() + 120
+          last_error = None
+          while time.time() < deadline:
+              try:
+                  driver = GraphDatabase.driver(
+                      os.environ["NEO4J_URI"],
+                      auth=(os.environ["NEO4J_USER"], os.environ["NEO4J_PASSWORD"]),
+                  )
+                  with driver.session() as session:
+                      session.run("RETURN 1 AS ok").consume()
+                  driver.close()
+                  print("Neo4j is ready")
+                  break
+              except Exception as exc:
+                  last_error = exc
+                  time.sleep(3)
+          else:
+              raise SystemExit(f"Neo4j did not become ready: {last_error}")
+          PY
+
+      - name: Run benchmark
+        run: |
+          python -m benchmark.benchmark_runner \
+            --target ha-CPsWMS-ci \
+            --neo4j-uri "$NEO4J_URI" \
+            --neo4j-user "$NEO4J_USER" \
+            --neo4j-password "$NEO4J_PASSWORD" \
+            --output benchmark/reports \
+            --format json,md,csv
+
+      - name: Upload benchmark reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-benchmark-reports
+          path: benchmark/reports/*_benchmark.*
 
   validate-debian:
     runs-on: ubuntu-latest
@@ -89,17 +153,18 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends python3 python3-pip ca-certificates
+          apt-get install -y --no-install-recommends python3 python3-pip ca-certificates git
 
       - name: Install Python dependencies
         run: |
           python3 -m pip install --break-system-packages --upgrade pip
+          python3 -m pip install --break-system-packages pytest
           python3 -m pip install --break-system-packages -r ha-sync/requirements.txt
           python3 -m pip install --break-system-packages -r semantic-enrichment/requirements.txt
 
       - name: Python syntax checks
         run: |
-          python3 -m compileall -q ha-sync semantic-enrichment scripts
+          python3 -m compileall -q benchmark ha-sync query-api scripts semantic-enrichment semantic_core sources storage tests world-model-chat
 
       - name: Validate enrichment wiring
         run: |
@@ -122,11 +187,18 @@ jobs:
               "enrichers.room_inference",
               "enrichers.dependency_reasoning",
               "enrichers.failure_impact",
+              "enrichers.capability_mapping",
+              "enrichers.causal_dependency",
               "enrichers.semantic_descriptions",
               "enrichers.recommended_actions",
+              "enrichers.simulation_readiness",
           ]
 
           for module_name in modules:
               importlib.import_module(module_name)
               print(f"Imported: {module_name}")
           PY
+
+      - name: Run tests
+        run: |
+          python3 -m pytest tests -q

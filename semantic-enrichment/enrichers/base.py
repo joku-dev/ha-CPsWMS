@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import date, datetime, time as datetime_time
 
 from neo4j import GraphDatabase
+from neo4j.exceptions import ServiceUnavailable, SessionExpired, TransientError
 from openai import OpenAI
 
 from config import (
@@ -17,7 +18,7 @@ from config import (
     PROMPTS_DIR,
     SCHEMAS_DIR,
 )
-from .enrichment_target_resolver import EnrichmentTargetResolver
+from enrichment_target_resolver import EnrichmentTargetResolver
 
 
 class BaseEnricher(ABC):
@@ -35,11 +36,26 @@ class BaseEnricher(ABC):
     def __init__(self):
         """Create reusable OpenAI and Neo4j clients for one enricher instance."""
         self.client = OpenAI(api_key=OPENAI_API_KEY)
+        self.driver = self.create_driver()
+        self.target_resolver = EnrichmentTargetResolver()
+
+    def create_driver(self):
+        """Create a Neo4j driver instance."""
+        return GraphDatabase.driver(
+            NEO4J_URI,
+            auth=(NEO4J_USER, NEO4J_PASSWORD),
+        )
+
+    def reconnect_driver(self):
+        """Reset the Neo4j driver after connection-pool failures."""
+        try:
+            self.driver.close()
+        except Exception:
+            pass
         self.driver = GraphDatabase.driver(
             NEO4J_URI,
             auth=(NEO4J_USER, NEO4J_PASSWORD),
         )
-        self.target_resolver = EnrichmentTargetResolver()
 
     def setup(self):
         """Prepare shared and enricher-specific database constraints."""
@@ -178,15 +194,45 @@ class BaseEnricher(ABC):
     def execute_targeted_write(self, canonical_body, entity_body, item):
         """Run an enrichment write query that targets canonical or legacy entities."""
         query = self.target_resolver.build_write_query(canonical_body, entity_body)
-        with self.driver.session() as session:
-            session.run(query, **item)
+        try:
+            with self.driver.session() as session:
+                session.run(query, **item)
+        except (ServiceUnavailable, SessionExpired, TransientError):
+            self.reconnect_driver()
+            with self.driver.session() as session:
+                session.run(query, **item)
+
+    def filter_target_ready_candidates(self, items):
+        """Avoid marking legacy entities enriched before canonical targets exist."""
+        mode = self.target_resolver.get_mode()
+        if mode == "entity_first":
+            return items
+
+        target_aware_items = [
+            item for item in items
+            if "canonical_id" in item
+        ]
+        if not target_aware_items:
+            return items
+
+        ready_items = [
+            item for item in items
+            if item.get("canonical_id")
+        ]
+        skipped_count = len(items) - len(ready_items)
+        if skipped_count:
+            print(
+                f"[{self.name}] Skipped {skipped_count} candidates without canonical target "
+                f"in {mode} mode."
+            )
+        return ready_items
 
     def run_once(self):
         """Run one enrichment iteration for the current enricher."""
         print(f"[{self.name}] Enrichment target mode: {self.target_resolver.get_mode()}")
         print(f"[{self.name}] Selecting candidates...")
 
-        items = self.get_candidates(BATCH_SIZE)
+        items = self.filter_target_ready_candidates(self.get_candidates(BATCH_SIZE))
 
         print(f"[{self.name}] Candidates found: {len(items)}")
 

@@ -1,9 +1,22 @@
 """Neo4j repository for semantic core operations."""
 
+import json
+
 from neo4j import GraphDatabase
-from typing import List, Optional
 
 from semantic_core.identity.models import CanonicalEntity, Evidence, RawEntity, ResolutionDecision, SourceSystem
+
+
+def serialize_property(value):
+    """Convert complex values into Neo4j property-compatible values."""
+    if isinstance(value, dict):
+        return json.dumps(value, ensure_ascii=False, default=str)
+    if isinstance(value, list):
+        return [
+            item if isinstance(item, (str, int, float, bool)) or item is None else json.dumps(item, ensure_ascii=False, default=str)
+            for item in value
+        ]
+    return value
 
 
 class Neo4jRepository:
@@ -30,7 +43,10 @@ class Neo4jRepository:
                 s.name = $name,
                 s.trust_level = $trust_level,
                 s.metadata = $metadata
-        """, session=session, **source.__dict__)
+        """, session=session, **{
+            **source.__dict__,
+            "metadata": serialize_property(source.metadata),
+        })
 
     def save_raw_entity(self, entity: RawEntity, session=None) -> None:
         """Save a raw entity node."""
@@ -44,7 +60,10 @@ class Neo4jRepository:
                 r.device_class = $device_class,
                 r.area = $area,
                 r.attributes = $attributes
-        """, session=session, **entity.__dict__)
+        """, session=session, **{
+            **entity.__dict__,
+            "attributes": serialize_property(entity.attributes),
+        })
 
     def save_canonical_entity(self, entity: CanonicalEntity, session=None) -> None:
         """Save a canonical entity node."""
@@ -57,10 +76,24 @@ class Neo4jRepository:
                 c.attributes = $attributes,
                 c.created_at = $created_at,
                 c.updated_at = $updated_at
-        """, session=session, **entity.__dict__)
+        """, session=session, **{
+            **entity.__dict__,
+            "attributes": serialize_property(entity.attributes),
+        })
 
     def save_resolution_decision(self, decision: ResolutionDecision, session=None) -> None:
         """Save a resolution decision and relationships."""
+        decision_params = {
+            "decision_id": decision.decision_id,
+            "raw_entity_id": decision.raw_entity_id,
+            "canonical_id": decision.canonical_id,
+            "decision_type": decision.decision_type,
+            "method": decision.method,
+            "overall_confidence": decision.overall_confidence,
+            "review_required": decision.review_required,
+            "created_at": decision.created_at,
+        }
+
         self._run("""
             MERGE (d:ResolutionDecision {decision_id: $decision_id})
             SET d.raw_entity_id = $raw_entity_id,
@@ -70,7 +103,7 @@ class Neo4jRepository:
                 d.overall_confidence = $overall_confidence,
                 d.review_required = $review_required,
                 d.created_at = $created_at
-        """, session=session, **decision.__dict__)
+        """, session=session, **decision_params)
 
         # Create relationships
         if decision.canonical_id:
@@ -114,4 +147,7 @@ class Neo4jRepository:
                 WITH e
                 MATCH (d:ResolutionDecision {decision_id: $decision_id})
                 MERGE (d)-[:BASED_ON]->(e)
-            """, session=session, evidence_id=evidence.evidence_id, decision_id=decision.decision_id, **evidence.__dict__)
+            """, session=session, decision_id=decision.decision_id, **{
+                **evidence.__dict__,
+                "details": serialize_property(evidence.details),
+            })

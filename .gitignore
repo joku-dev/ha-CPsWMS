@@ -1,6 +1,10 @@
 # Ignore Neo4j runtime data and logs
 neo4j/data/
-eo4j/logs/
+neo4j/logs/
+
+# Generated benchmark reports
+benchmark/reports/*
+!benchmark/reports/.gitkeep
 
 # Python artifacts
 __pycache__/

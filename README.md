@@ -65,6 +65,169 @@ docker compose logs -f semantic-enrichment
 
 - `http://localhost:8080/health`
 
+## Von Scratch starten
+
+Diese Schritte bauen das komplette System aus einem frischen Checkout oder nach einem lokalen Reset neu auf.
+
+1. Repository vorbereiten:
+
+```bash
+git pull
+cp .env.example .env
+```
+
+2. `.env` ausfuellen:
+
+- `HA_URL`
+- `HA_TOKEN`
+- `NEO4J_PASSWORD`
+- `NEO4J_AUTH`, zum Beispiel `neo4j/<NEO4J_PASSWORD>`
+- optional: `OPENAI_API_KEY`, wenn `semantic-enrichment` laufen soll
+- optional: `OPENAI_MODEL`
+
+3. Falls ein komplett leerer Graph gewuenscht ist, lokale Neo4j-Daten entfernen:
+
+```bash
+docker compose down
+rm -rf neo4j/data neo4j/logs
+mkdir -p neo4j/logs
+```
+
+Dieser Schritt loescht den lokalen Graphen. Ohne diesen Schritt wird der bestehende Neo4j-Datenstand wiederverwendet.
+
+4. Stack bauen und starten:
+
+```bash
+docker compose up -d --build
+```
+
+5. Status pruefen:
+
+```bash
+docker compose ps
+```
+
+6. Sync-Logs beobachten, bis ein erfolgreicher Lauf sichtbar ist:
+
+```bash
+docker compose logs -f ha-sync
+```
+
+Erwartete Erfolgsmeldung:
+
+```text
+Synced: ... states, ... entities, ... devices, ... areas, ...
+```
+
+7. Optional Enrichment-Logs beobachten:
+
+```bash
+docker compose logs -f semantic-enrichment
+```
+
+Wenn kein OpenAI-Budget oder kein gueltiger `OPENAI_API_KEY` verfuegbar ist, kann der Enrichment-Container gestoppt bleiben:
+
+```bash
+docker compose stop semantic-enrichment
+```
+
+Nach Freischaltung des LLM-Layers:
+
+```bash
+docker compose up -d semantic-enrichment
+```
+
+8. Neo4j Browser oeffnen:
+
+- `http://localhost:7474`
+
+Login:
+
+- Benutzer: `neo4j`
+- Passwort: Wert aus `NEO4J_PASSWORD`
+
+9. Basisobjekte in Neo4j pruefen:
+
+```cypher
+MATCH (e:Entity)
+RETURN count(e) AS entities;
+```
+
+Canonical Entity Layer pruefen:
+
+```cypher
+MATCH (r:RawEntity)
+RETURN count(r) AS raw_entities;
+```
+
+```cypher
+MATCH (c:CanonicalEntity)
+RETURN count(c) AS canonical_entities;
+```
+
+```cypher
+MATCH (:RawEntity)-[rel:RESOLVED_TO]->(:CanonicalEntity)
+RETURN count(rel) AS resolutions;
+```
+
+10. APIs pruefen:
+
+```bash
+curl http://localhost:8080/health
+curl http://localhost:8090/health
+```
+
+11. Optional Benchmark ausfuehren:
+
+```bash
+python -m benchmark.benchmark_runner \
+  --target ha-CPsWMS \
+  --neo4j-uri bolt://localhost:7687 \
+  --neo4j-user neo4j \
+  --neo4j-password "$NEO4J_PASSWORD" \
+  --output benchmark/reports \
+  --format json,md,csv
+```
+
+Reports werden unter `benchmark/reports/` erzeugt. Diese Dateien sind lokale Laufartefakte und werden nicht versioniert.
+
+## Herunterfahren
+
+Services stoppen, aber Container und lokale Daten behalten:
+
+```bash
+docker compose stop
+```
+
+Services wieder starten:
+
+```bash
+docker compose start
+```
+
+Container entfernen, lokale Neo4j-Daten aber behalten:
+
+```bash
+docker compose down
+```
+
+Komplett herunterfahren und lokalen Graphen loeschen:
+
+```bash
+docker compose down
+rm -rf neo4j/data neo4j/logs
+mkdir -p neo4j/logs
+```
+
+Nur einzelne Services neu starten:
+
+```bash
+docker compose restart ha-sync
+docker compose restart semantic-enrichment
+docker compose restart query-api
+docker compose restart world-model-chat
+```
+
 ## Wichtige Umgebungsvariablen
 
 Basis:

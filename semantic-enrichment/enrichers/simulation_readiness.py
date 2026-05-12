@@ -69,11 +69,7 @@ class SimulationReadinessEnricher(BaseEnricher):
         }
 
         WITH scenario_id, scenario_type, target_id, target_type, target_name
-        ORDER BY scenario_id,
-        
-            raw.raw_entity_id AS raw_entity_id,
-            raw.source_entity_id AS source_entity_id,
-            c.canonical_id AS canonical_id
+        ORDER BY scenario_id
         LIMIT $limit
 
         OPTIONAL MATCH (scenario:SimulationScenario {scenario_id: scenario_id})

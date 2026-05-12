@@ -35,35 +35,24 @@ class EnrichmentTargetResolver:
             MATCH (e:Entity {{entity_id: $entity_id}})
             {self.canonical_context_clause()}
             WITH e, c
-            CALL {{
-                WITH e, c
-                WHERE c IS NOT NULL
+            FOREACH (_ IN CASE WHEN c IS NULL THEN [] ELSE [1] END |
                 {canonical_body}
-                RETURN 1 AS _canonical
-            }}
-            CALL {{
-                WITH e
+            )
+            FOREACH (_ IN [1] |
                 {entity_body}
-                RETURN 1 AS _entity
-            }}
+            )
             """
 
         return f"""
         MATCH (e:Entity {{entity_id: $entity_id}})
         {self.canonical_context_clause()}
         WITH e, c
-        CALL {{
-            WITH e, c
-            WHERE c IS NOT NULL
+        FOREACH (_ IN CASE WHEN c IS NULL THEN [] ELSE [1] END |
             {canonical_body}
-            RETURN 1 AS _canonical
-        }}
-        CALL {{
-            WITH e, c
-            WHERE c IS NULL
+        )
+        FOREACH (_ IN CASE WHEN c IS NULL THEN [1] ELSE [] END |
             {entity_body}
-            RETURN 1 AS _entity
-        }}
+        )
         """
 
     def get_mode(self) -> str:
