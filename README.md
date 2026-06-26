@@ -29,6 +29,7 @@ Ontologie-, Zeit- und Kausalmodellierung.
 - `world-model-chat/`: FastAPI-Chat-Schicht ueber dem Neo4j-World-Model
 - `docs/`: Architektur, Deployment, FAQ und Enrichment-Doku
 - `docs/CANONICAL_ENTITY_LAYER.md`: Dokumentation der neuen semantischen Identitätsschicht
+- `docs/GOVERNANCE_BASELINE_STATEMENT.md`: Offizielles Statement zur erfolgreichen L1-Governance-Baseline-Integration
 - `.env.example`: Beispielkonfiguration
 
 ## Schnellstart
