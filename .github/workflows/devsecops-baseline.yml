@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 jobs:
   prepare-devsecops-evidence:
@@ -94,7 +95,7 @@ jobs:
   devsecops-baseline:
     name: Central DevSecOps Baseline
     needs: prepare-devsecops-evidence
-    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-reusable.yml@main
+    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-reusable.yml@528bee5fd067ab7f65c3030863ca338e0553cfdf
     with:
       level: L1
       max_allowed_severity: high
@@ -103,3 +104,4 @@ jobs:
       vulnerability_scan_path: security/vulnerability-scan.json
       application_evidence_artifact_name: application-evidence
       generate_demo_evidence: false
+      signature_path: ''
