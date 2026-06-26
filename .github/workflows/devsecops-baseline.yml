@@ -104,4 +104,3 @@ jobs:
       vulnerability_scan_path: security/vulnerability-scan.json
       application_evidence_artifact_name: application-evidence
       generate_demo_evidence: false
-      signature_path: ''
