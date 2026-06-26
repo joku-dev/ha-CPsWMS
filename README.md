@@ -10,6 +10,8 @@ als einen von mehreren möglichen Quellen behandelt. Es unterstützt die Zuordnu
 von Rohdaten zu stabilen Identitäten und legt damit die Grundlage für spätere
 Ontologie-, Zeit- und Kausalmodellierung.
 
+> Testhinweis: Diese Änderung dient zum Auslösen des zentralen DevSecOps-Baseline-Workflows.
+
 ## Komponenten
 
 1. `neo4j`: Graphdatenbank
