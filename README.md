@@ -30,6 +30,7 @@ Ontologie-, Zeit- und Kausalmodellierung.
 - `docs/`: Architektur, Deployment, FAQ und Enrichment-Doku
 - `docs/CANONICAL_ENTITY_LAYER.md`: Dokumentation der neuen semantischen Identitätsschicht
 - `docs/GOVERNANCE_BASELINE_STATEMENT.md`: Offizielles Statement zur erfolgreichen L1-Governance-Baseline-Integration
+- `docs/HOW_TO_USE_CENTRAL_GOVERNANCE_BASELINE.md`: Schritt-für-Schritt-Anleitung für andere Repositories zur Nutzung des zentralen Governance-as-Code-Repos
 - `.env.example`: Beispielkonfiguration
 
 ## Schnellstart
