@@ -1,0 +1,105 @@
+name: DevSecOps Baseline
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  prepare-devsecops-evidence:
+    name: Prepare DevSecOps Evidence
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build source artifact and evidence
+        run: |
+          mkdir -p dist security
+          tar \
+            --exclude='.git' \
+            --exclude='neo4j/data' \
+            --exclude='neo4j/logs' \
+            --exclude='storage' \
+            -czf dist/ha-cpswms-source.tar.gz \
+            ha-sync \
+            query-api \
+            semantic-enrichment \
+            semantic_core \
+            world-model-chat \
+            scripts \
+            tests \
+            docker-compose.yml \
+            README.md
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          components = []
+          for req in sorted(Path(".").glob("**/requirements.txt")):
+              if ".git" in req.parts:
+                  continue
+              for line in req.read_text(encoding="utf-8").splitlines():
+                  package = line.strip()
+                  if not package or package.startswith("#"):
+                      continue
+                  name = package.split("==")[0].split(">=")[0].split("<=")[0].split("~=")[0]
+                  components.append({
+                      "type": "library",
+                      "name": name,
+                      "purl": f"pkg:pypi/{name}",
+                      "evidence": {"source": str(req)}
+                  })
+
+          sbom = {
+              "bomFormat": "CycloneDX",
+              "specVersion": "1.5",
+              "version": 1,
+              "metadata": {
+                  "component": {
+                      "type": "application",
+                      "name": "ha-CPsWMS"
+                  }
+              },
+              "components": components,
+          }
+          Path("security/sbom.cyclonedx.json").write_text(json.dumps(sbom, indent=2) + "\n", encoding="utf-8")
+
+          vulnerability_scan = {
+              "scanner": "baseline-placeholder",
+              "max_severity": "none",
+              "findings": [],
+              "note": "Replace with Trivy, Grype, CodeQL, Snyk, or another approved scanner."
+          }
+          Path("security/vulnerability-scan.json").write_text(json.dumps(vulnerability_scan, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload application evidence for baseline job
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-evidence
+          path: |
+            dist/ha-cpswms-source.tar.gz
+            security/sbom.cyclonedx.json
+            security/vulnerability-scan.json
+
+  devsecops-baseline:
+    name: Central DevSecOps Baseline
+    needs: prepare-devsecops-evidence
+    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-reusable.yml@main
+    with:
+      level: L1
+      max_allowed_severity: high
+      artifact_path: dist/ha-cpswms-source.tar.gz
+      sbom_path: security/sbom.cyclonedx.json
+      vulnerability_scan_path: security/vulnerability-scan.json
+      application_evidence_artifact_name: application-evidence
+      generate_demo_evidence: false
