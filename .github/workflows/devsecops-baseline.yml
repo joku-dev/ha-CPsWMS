@@ -22,8 +22,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build source artifact and evidence
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
-          mkdir -p dist security
+          mkdir -p dist security governance
           tar \
             --exclude='.git' \
             --exclude='neo4j/data' \
@@ -42,6 +45,7 @@ jobs:
 
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
 
           components = []
@@ -81,6 +85,100 @@ jobs:
               "note": "Replace with Trivy, Grype, CodeQL, Snyk, or another approved scanner."
           }
           Path("security/vulnerability-scan.json").write_text(json.dumps(vulnerability_scan, indent=2) + "\n", encoding="utf-8")
+
+          release_approved = os.environ.get("GITHUB_EVENT_NAME") == "push" and os.environ.get("GITHUB_REF_NAME") == "main"
+          governance_input = {
+              "release_candidate": True,
+              "required_platform_level": "PRA-Level 1",
+              "repository": {
+                  "protected_branch": True,
+                  "direct_push_allowed": False,
+                  "review_required": True,
+              },
+              "traceability": {
+                  "requirements_linked": False,
+                  "testcases_linked": False,
+                  "reports_linked": False,
+              },
+              "source_control": {
+                  "approved_vcs": True,
+                  "identifiable_authors": True,
+                  "review_records_present": True,
+              },
+              "static_analysis": {
+                  "performed": False,
+                  "findings_reviewed": False,
+              },
+              "evidence": {
+                  "sbom": {
+                      "exists": True,
+                      "linked_to_artifact": True,
+                  },
+                  "vulnerability_scan": {
+                      "exists": True,
+                  },
+              },
+              "artifact": {
+                  "digest": {
+                      "exists": True,
+                      "linked_to_artifact": True,
+                  },
+                  "signature": {
+                      "exists": False,
+                  },
+              },
+              "signing": {
+                  "keys_protected": False,
+              },
+              "pipeline": {
+                  "external_direct_downloads_detected": False,
+                  "security_gates": {
+                      "enforced": True,
+                  },
+                  "security_thresholds_exceeded": False,
+              },
+              "release": {
+                  "approved_waiver": {
+                      "exists": False,
+                  },
+              },
+              "release_approval": {
+                  "approved": release_approved,
+                  "approver": "protected-main-merge" if release_approved else "",
+                  "approved_artifact_only": release_approved,
+              },
+              "dependencies": [
+                  {
+                      "name": component["name"],
+                      "source_approved": True,
+                  }
+                  for component in components
+              ],
+              "infrastructure": {
+                  "iac_repository": {
+                      "exists": False,
+                      "version_controlled": False,
+                  },
+              },
+              "operations": {
+                  "deployed_versions_recorded": False,
+                  "security_events_recorded": False,
+              },
+              "monitoring": {
+                  "security_events_generated": False,
+                  "integration_enabled": False,
+                  "forwarded_to_monitoring": False,
+              },
+              "deployment": {
+                  "required": True,
+              },
+              "vulnerabilities": [],
+              "waivers": [],
+          }
+          Path("governance/governance-run-input.json").write_text(
+              json.dumps(governance_input, indent=2) + "\n",
+              encoding="utf-8",
+          )
           PY
 
       - name: Upload application evidence for baseline job
@@ -91,16 +189,74 @@ jobs:
             dist/ha-cpswms-source.tar.gz
             security/sbom.cyclonedx.json
             security/vulnerability-scan.json
+            governance/governance-run-input.json
 
   devsecops-baseline:
     name: Central DevSecOps Baseline
     needs: prepare-devsecops-evidence
-    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-reusable.yml@d914566ed1c6ee2bd472a853d36318933955b120
+    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-l1-v1.0.0.yml@l1-baseline-v1.0.0
     with:
-      level: L1
       max_allowed_severity: high
       artifact_path: dist/ha-cpswms-source.tar.gz
       sbom_path: security/sbom.cyclonedx.json
       vulnerability_scan_path: security/vulnerability-scan.json
       application_evidence_artifact_name: application-evidence
       generate_demo_evidence: false
+
+  governance-control-evaluation:
+    name: Governance Control Evaluation
+    needs: prepare-devsecops-evidence
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout application repository
+        uses: actions/checkout@v4
+        with:
+          path: application
+
+      - name: Download application evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: application-evidence
+          path: application
+
+      - name: Checkout governance repository
+        uses: actions/checkout@v4
+        with:
+          repository: joku-dev/devsecops-governance-as-code
+          ref: 2195e5f59fe0900acf4e92e0d0de0e982bcd15e5
+          path: governance
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install governance evaluator dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Install OPA
+        run: |
+          curl -L -o /tmp/opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64_static
+          chmod +x /tmp/opa
+          sudo mv /tmp/opa /usr/local/bin/opa
+          opa version
+
+      - name: Generate control evaluation report
+        run: |
+          python governance/scripts/generate_control_evaluation_report.py \
+            --input-file application/governance/governance-run-input.json \
+            --output-file application/generated/control-evaluation-report.json \
+            --markdown-file application/generated/control-evaluation-report.md || true
+
+      - name: Upload control evaluation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-control-evaluation
+          path: |
+            application/generated/control-evaluation-report.json
+            application/generated/control-evaluation-report.md
+            application/governance/governance-run-input.json

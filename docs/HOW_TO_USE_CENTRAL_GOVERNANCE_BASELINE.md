@@ -11,6 +11,7 @@ The goal is to help repository owners integrate a shared DevSecOps baseline with
 The central governance repository provides:
 
 - the reusable GitHub Actions governance workflow
+- the released L1 workflow wrapper
 - the baseline decision logic
 - the evidence model
 - the machine-readable pipeline evidence format
@@ -24,8 +25,9 @@ Each application repository must:
 1. build or package an application artifact
 2. generate or provide an SBOM
 3. generate or provide vulnerability scan evidence
-4. upload the evidence as a GitHub Actions artifact
-5. call the reusable governance workflow from the central repository
+4. optionally generate structured control-evaluation input evidence
+5. upload the evidence as a GitHub Actions artifact
+6. call the reusable governance workflow from the central repository
 
 ## Step-By-Step Instructions
 
@@ -98,6 +100,14 @@ jobs:
           }
           JSON
 
+          mkdir -p governance
+          cat > governance/governance-run-input.json <<'JSON'
+          {
+            "release_candidate": true,
+            "required_platform_level": "PRA-Level 1"
+          }
+          JSON
+
       - name: Upload application evidence
         uses: actions/upload-artifact@v4
         with:
@@ -106,19 +116,27 @@ jobs:
             dist/application-artifact.txt
             security/sbom.cyclonedx.json
             security/vulnerability-scan.json
+            governance/governance-run-input.json
 
   devsecops-baseline:
     name: Central DevSecOps Baseline
     needs: prepare-devsecops-evidence
-    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-reusable.yml@528bee5fd067ab7f65c3030863ca338e0553cfdf
+    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-l1-v1.0.0.yml@l1-baseline-v1.0.0
     with:
-      level: L1
       max_allowed_severity: high
       artifact_path: dist/application-artifact.txt
       sbom_path: security/sbom.cyclonedx.json
       vulnerability_scan_path: security/vulnerability-scan.json
       application_evidence_artifact_name: application-evidence
       generate_demo_evidence: false
+
+  governance-control-evaluation:
+    name: Governance Control Evaluation
+    needs: prepare-devsecops-evidence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate control report
+        run: echo "Use the governance repository evaluator against governance/governance-run-input.json"
 ```
 
 ## Step 4: Replace The Placeholder Artifact
@@ -205,6 +223,7 @@ Expected jobs:
 
 - `Prepare DevSecOps Evidence`
 - `Central DevSecOps Baseline`
+- `Governance Control Evaluation`
 
 ## Step 9: Inspect The Workflow Result
 
@@ -216,6 +235,7 @@ You should also see these artifacts:
 
 - `application-evidence`
 - `devsecops-pipeline-evidence`
+- `governance-control-evaluation`
 
 ## Step 10: Review The Machine-Readable Governance Evidence
 
@@ -232,6 +252,19 @@ generated/evidence/pipeline-evidence.json
 ```
 
 This file is the central machine-readable proof that the governance baseline was executed.
+
+If the repository also generates a structured control-evaluation input, inspect:
+
+```text
+governance/governance-run-input.json
+```
+
+and the resulting report artifact:
+
+```text
+generated/control-evaluation-report.json
+generated/control-evaluation-report.md
+```
 
 ## Step 11: Interpret The Result
 
