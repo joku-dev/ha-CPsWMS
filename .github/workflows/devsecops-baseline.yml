@@ -174,6 +174,45 @@ jobs:
               encoding="utf-8",
           )
 
+          artifact_path = Path("dist/ha-cpswms-source.tar.gz")
+          operations_evidence = {
+              "schema_version": "1.0.0",
+              "artifact_version": os.environ.get("GITHUB_SHA", "unknown"),
+              "target_branch": os.environ.get("GITHUB_REF_NAME", "unknown"),
+              "deployment_reference": {
+                  "exists": Path("docs/DEPLOYMENT.md").is_file(),
+                  "source": "docs/DEPLOYMENT.md",
+              },
+              "deployed_components": [
+                  {"name": "neo4j", "source": "docker-compose.yml"},
+                  {"name": "ha-sync", "source": "docker-compose.yml"},
+                  {"name": "semantic-enrichment", "source": "docker-compose.yml"},
+                  {"name": "query-api", "source": "docker-compose.yml"},
+                  {"name": "world-model-chat", "source": "docker-compose.yml"},
+              ],
+              "security_event_sources": [
+                  {"type": "vulnerability_scan", "path": "security/vulnerability-scan.json"},
+                  {"type": "static_analysis_summary", "path": "security/static-analysis-summary.json"},
+                  {"type": "bandit", "path": "security/bandit-report.json"},
+              ],
+          }
+          deployed_versions_recorded = (
+              artifact_path.is_file()
+              and operations_evidence["deployment_reference"]["exists"]
+              and len(operations_evidence["deployed_components"]) > 0
+          )
+          security_events_recorded = all(
+              Path(item["path"]).is_file() for item in operations_evidence["security_event_sources"]
+          )
+          operations_evidence["summary"] = {
+              "deployed_versions_recorded": deployed_versions_recorded,
+              "security_events_recorded": security_events_recorded,
+          }
+          Path("governance/operations-evidence.json").write_text(
+              json.dumps(operations_evidence, indent=2) + "\n",
+              encoding="utf-8",
+          )
+
           release_approved = os.environ.get("GITHUB_EVENT_NAME") == "push" and os.environ.get("GITHUB_REF_NAME") == "main"
           governance_input = {
               "release_candidate": True,
@@ -249,8 +288,8 @@ jobs:
                   },
               },
               "operations": {
-                  "deployed_versions_recorded": False,
-                  "security_events_recorded": False,
+                  "deployed_versions_recorded": deployed_versions_recorded,
+                  "security_events_recorded": security_events_recorded,
               },
               "monitoring": {
                   "security_events_generated": False,
@@ -280,6 +319,7 @@ jobs:
             security/ruff-report.json
             security/bandit-report.json
             security/static-analysis-summary.json
+            governance/operations-evidence.json
             governance/traceability.json
             governance/governance-run-input.json
 
