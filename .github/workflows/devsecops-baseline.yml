@@ -194,7 +194,7 @@ jobs:
   devsecops-baseline:
     name: Central DevSecOps Baseline
     needs: prepare-devsecops-evidence
-    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-l1-v1.1.0.yml@l1-baseline-v1.1.0
+    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-l1-v1.1.1.yml@l1-baseline-v1.1.1
     with:
       max_allowed_severity: high
       artifact_path: dist/ha-cpswms-source.tar.gz
@@ -225,7 +225,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: joku-dev/devsecops-governance-as-code
-          ref: l1-baseline-v1.1.0
+          ref: l1-baseline-v1.1.1
           path: governance
 
       - name: Set up Python
