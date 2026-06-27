@@ -95,7 +95,7 @@ jobs:
   devsecops-baseline:
     name: Central DevSecOps Baseline
     needs: prepare-devsecops-evidence
-    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-reusable.yml@cbe451509e0dc0a14210a0abeac2601a4363ac24
+    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-reusable.yml@d914566ed1c6ee2bd472a853d36318933955b120
     with:
       level: L1
       max_allowed_severity: high
