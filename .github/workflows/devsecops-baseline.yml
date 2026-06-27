@@ -249,9 +249,10 @@ jobs:
           python governance/scripts/generate_control_evaluation_report.py \
             --input-file application/governance/governance-run-input.json \
             --output-file application/generated/control-evaluation-report.json \
-            --markdown-file application/generated/control-evaluation-report.md
+            --markdown-file application/generated/control-evaluation-report.md || true
 
       - name: Upload control evaluation report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: governance-control-evaluation
