@@ -121,7 +121,7 @@ jobs:
   devsecops-baseline:
     name: Central DevSecOps Baseline
     needs: prepare-devsecops-evidence
-    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-l1-v1.0.0.yml@l1-baseline-v1.0.0
+    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-l1-v1.1.3.yml@l1-baseline-v1.1.3
     with:
       max_allowed_severity: high
       artifact_path: dist/application-artifact.txt
