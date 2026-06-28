@@ -1,0 +1,61 @@
+{
+  "release_candidate": false,
+  "pipeline": {
+    "pipeline_id": "DevSecOps Baseline",
+    "pipeline_run_id": "28263295148",
+    "commit_id": "0f0749a24c7f9eae2f99db40b60bc5a7dfad91d9",
+    "status": "success",
+    "security_gates": {
+      "enforced": true
+    },
+    "security_thresholds_exceeded": false,
+    "external_direct_downloads_detected": false
+  },
+  "repository": {
+    "repository_id": "joku-dev/ha-CPsWMS",
+    "branch": "main",
+    "protected_branch": false,
+    "direct_push_allowed": false,
+    "review_required": true
+  },
+  "artifact": {
+    "artifact_id": "ha-cpswms-source.tar.gz",
+    "artifact_type": "application-build-output",
+    "artifact_version": "0f0749a24c7f",
+    "digest": {
+      "exists": true,
+      "linked_to_artifact": true,
+      "algorithm": "sha256",
+      "value": "5a28c71549b553704cc3c3b32c9bc2413d75386abb064e7be245b14ff17cf287"
+    },
+    "signature": {
+      "exists": false
+    }
+  },
+  "evidence": {
+    "sbom": {
+      "exists": true,
+      "linked_to_artifact": true,
+      "path": "security/sbom.cyclonedx.json"
+    },
+    "vulnerability_scan": {
+      "exists": true,
+      "path": "security/vulnerability-scan.json",
+      "max_severity": "none"
+    },
+    "pipeline_execution": {
+      "evidence_id": "github-actions-28263295148",
+      "pipeline_run_id": "28263295148",
+      "status": "success",
+      "generated_at": "2026-06-26T20:25:02.155735+00:00"
+    }
+  },
+  "release": {
+    "release_id": "joku-dev/ha-CPsWMS@0f0749a24c7f",
+    "approval_status": "not_required",
+    "approved_waiver": {
+      "exists": false
+    }
+  },
+  "waivers": []
+}

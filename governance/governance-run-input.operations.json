@@ -1,0 +1,135 @@
+{
+  "release_candidate": true,
+  "required_platform_level": "PRA-Level 1",
+  "repository": {
+    "protected_branch": true,
+    "direct_push_allowed": false,
+    "review_required": true
+  },
+  "traceability": {
+    "requirements_linked": true,
+    "testcases_linked": true,
+    "reports_linked": true
+  },
+  "source_control": {
+    "approved_vcs": true,
+    "identifiable_authors": true,
+    "review_records_present": true
+  },
+  "static_analysis": {
+    "performed": true,
+    "findings_reviewed": true
+  },
+  "evidence": {
+    "sbom": {
+      "exists": true,
+      "linked_to_artifact": true
+    },
+    "vulnerability_scan": {
+      "exists": true
+    }
+  },
+  "artifact": {
+    "digest": {
+      "exists": true,
+      "linked_to_artifact": true
+    },
+    "signature": {
+      "exists": false
+    }
+  },
+  "signing": {
+    "keys_protected": false
+  },
+  "pipeline": {
+    "external_direct_downloads_detected": false,
+    "security_gates": {
+      "enforced": true
+    },
+    "security_thresholds_exceeded": false
+  },
+  "release": {
+    "approved_waiver": {
+      "exists": false
+    }
+  },
+  "release_approval": {
+    "approved": true,
+    "approver": "protected-main-merge",
+    "approved_artifact_only": true
+  },
+  "dependencies": [
+    {
+      "name": "requests",
+      "source_approved": true
+    },
+    {
+      "name": "neo4j",
+      "source_approved": true
+    },
+    {
+      "name": "websocket-client",
+      "source_approved": true
+    },
+    {
+      "name": "pyyaml",
+      "source_approved": true
+    },
+    {
+      "name": "neo4j",
+      "source_approved": true
+    },
+    {
+      "name": "openai",
+      "source_approved": true
+    },
+    {
+      "name": "neo4j",
+      "source_approved": true
+    },
+    {
+      "name": "python-dotenv",
+      "source_approved": true
+    },
+    {
+      "name": "fastapi",
+      "source_approved": true
+    },
+    {
+      "name": "uvicorn[standard]",
+      "source_approved": true
+    },
+    {
+      "name": "neo4j",
+      "source_approved": true
+    },
+    {
+      "name": "openai",
+      "source_approved": true
+    },
+    {
+      "name": "python-dotenv",
+      "source_approved": true
+    }
+  ],
+  "infrastructure": {
+    "iac_repository": {
+      "exists": false,
+      "version_controlled": false
+    }
+  },
+  "operations": {
+    "deployed_versions_recorded": true,
+    "security_events_recorded": true
+  },
+  "monitoring": {
+    "security_events_generated": false,
+    "integration_enabled": false,
+    "forwarded_to_monitoring": false
+  },
+  "deployment": {
+    "required": true
+  },
+  "vulnerabilities": [],
+  "waivers": []
+}
