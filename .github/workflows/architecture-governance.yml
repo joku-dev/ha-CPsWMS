@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: joku-dev/devsecops-governance-as-code
-          ref: codex/runtime-governance-addendum
+          ref: main
           path: governance
 
       - name: Set up Python
