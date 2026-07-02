@@ -1,0 +1,45 @@
+{
+  "status": "approved",
+  "owner": "DevSecOps Owner",
+  "approved_by": "DevSecOps Demo Review",
+  "approval_date": "2026-07-02",
+  "summary": "Demo DevSecOps release evidence for ha-CPsWMS. This evidence records branch/review expectations, SBOM and vulnerability scan availability, artifact integrity, dependency source approval and CI security gate coverage for the live governance demonstration.",
+  "repository": {
+    "protected_branch": true,
+    "direct_push_allowed": false,
+    "review_required": true
+  },
+  "sbom": {
+    "exists": true,
+    "linked_to_artifact": true
+  },
+  "vulnerability_scan": {
+    "exists": true
+  },
+  "artifact": {
+    "digest_exists": true,
+    "digest_linked_to_artifact": true,
+    "signature_exists": false
+  },
+  "pipeline": {
+    "security_gates_enforced": true,
+    "security_thresholds_exceeded": false,
+    "external_direct_downloads_detected": false
+  },
+  "evidence_refs": [
+    ".github/workflows/ci.yml",
+    "docker-compose.yml",
+    "ha-sync/requirements.txt",
+    "semantic-enrichment/requirements.txt",
+    "query-api/requirements.txt",
+    "world-model-chat/requirements.txt"
+  ],
+  "known_limitations": [
+    "SBOM, vulnerability and digest evidence are represented as approved demo evidence and should be replaced by generated tool outputs for production use."
+  ],
+  "follow_up_actions": [
+    "Generate SBOM as a CI artifact.",
+    "Generate vulnerability scan output as a CI artifact.",
+    "Attach artifact digest evidence to packaged releases."
+  ]
+}
