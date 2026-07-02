@@ -1,0 +1,19 @@
+{
+  "evidence_type": "security_evidence",
+  "status": "approved",
+  "owner": "Security Owner",
+  "approved_by": "Architecture Demo Review",
+  "approval_date": "2026-07-02",
+  "summary": "Demo security evidence based on deployment guidance for secrets handling, local environment assumptions and CI validation workflow.",
+  "evidence_refs": [
+    "docs/DEPLOYMENT.md",
+    ".github/workflows/ci.yml"
+  ],
+  "known_limitations": [
+    "No dedicated vulnerability scan report is currently committed as governance evidence."
+  ],
+  "follow_up_actions": [
+    "Add dependency vulnerability scan evidence.",
+    "Add a lightweight threat model for Home Assistant, Neo4j and OpenAI integration boundaries."
+  ]
+}

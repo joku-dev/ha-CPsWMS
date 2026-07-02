@@ -1,0 +1,21 @@
+{
+  "evidence_type": "solution_baseline",
+  "status": "approved",
+  "owner": "Solution Architect",
+  "baseline_version": "ha-CPsWMS-demo-baseline",
+  "approved_by": "Architecture Demo Review",
+  "approval_date": "2026-07-02",
+  "summary": "Demo solution baseline for the Home Assistant to Neo4j semantic world model capability. It identifies the current repository revision, Docker Compose topology, schemas, deployment assumptions and runtime components as the compatible baseline.",
+  "evidence_refs": [
+    "docs/ARCHITECTURE.md",
+    "docs/DEPLOYMENT.md",
+    "docker-compose.yml"
+  ],
+  "known_limitations": [
+    "Baseline is prepared for governance demo and should be formalized before production use."
+  ],
+  "follow_up_actions": [
+    "Assign a permanent baseline owner.",
+    "Replace demo approval with formal architecture review approval."
+  ]
+}

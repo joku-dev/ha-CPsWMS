@@ -1,0 +1,20 @@
+{
+  "evidence_type": "operation_evidence",
+  "status": "approved",
+  "owner": "Operations Owner",
+  "approved_by": "Architecture Demo Review",
+  "approval_date": "2026-07-02",
+  "summary": "Demo operation evidence based on deployment health-check guidance, Docker Compose runtime visibility and benchmark reports.",
+  "evidence_refs": [
+    "docs/DEPLOYMENT.md",
+    "docker-compose.yml",
+    "benchmark/reports/performance_evolution_summary.md"
+  ],
+  "known_limitations": [
+    "No live monitoring dashboard export is currently committed."
+  ],
+  "follow_up_actions": [
+    "Add dashboard or metrics evidence.",
+    "Add operational health indicators for query-api and world-model-chat."
+  ]
+}
