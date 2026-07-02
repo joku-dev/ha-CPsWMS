@@ -18,3 +18,5 @@ Enthaltene Dokumente:
 ## Zweck
 
 Die Dokumente in diesem Ordner dienen als Referenz für Entwickler und Betreiber, um Architektur, Datenfluss, Schnittstellen und Betriebsprozesse des Projekts zu verstehen.
+
+Die Governance-Workflows pruefen ergaenzend, ob Architektur- und DevSecOps-Evidence fuer Demo- und Review-Laeufe maschinenlesbar bereitsteht.
