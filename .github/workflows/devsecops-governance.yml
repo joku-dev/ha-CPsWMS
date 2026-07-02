@@ -4,6 +4,15 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      governance_mode:
+        description: "DevSecOps governance mode for manual runs"
+        required: true
+        default: "report-only"
+        type: choice
+        options:
+          - report-only
+          - block-on-error
 
 jobs:
   devsecops-governance:
@@ -11,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      GOVERNANCE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.governance_mode || 'report-only' }}
     steps:
       - name: Checkout application repository
         uses: actions/checkout@v4
@@ -47,6 +58,7 @@ jobs:
       - name: Generate DevSecOps governance report
         working-directory: governance
         run: |
+          echo "DevSecOps governance mode: ${GOVERNANCE_MODE}" >> "$GITHUB_STEP_SUMMARY"
           python scripts/generate_devsecops_governance_report.py \
             --input generated/app/devsecops-release-input.json \
             --output-json generated/app/devsecops-governance-report.json \
@@ -61,3 +73,21 @@ jobs:
             governance/generated/app/devsecops-release-input.json
             governance/generated/app/devsecops-governance-report.json
             governance/generated/app/devsecops-governance-report.md
+
+      - name: Enforce DevSecOps governance findings
+        if: ${{ env.GOVERNANCE_MODE == 'block-on-error' }}
+        working-directory: governance
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          report = json.loads(Path("generated/app/devsecops-governance-report.json").read_text(encoding="utf-8"))
+          finding_count = report.get("summary", {}).get("finding_count", 0)
+          if finding_count:
+              print(f"DevSecOps governance is configured as block-on-error and found {finding_count} finding(s).")
+              for finding in report.get("gate", {}).get("findings", []):
+                  print(f"- {finding}")
+              raise SystemExit(1)
+          print("DevSecOps governance is configured as block-on-error and found no findings.")
+          PY
