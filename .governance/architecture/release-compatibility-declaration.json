@@ -1,0 +1,23 @@
+{
+  "evidence_type": "release_compatibility_declaration",
+  "status": "approved",
+  "owner": "Product Architect",
+  "baseline_version": "ha-CPsWMS-demo-baseline",
+  "approved_by": "Architecture Demo Review",
+  "approval_date": "2026-07-02",
+  "summary": "Declares the current ha-CPsWMS release candidate compatible with the demo solution baseline for architecture governance demonstration purposes.",
+  "evidence_refs": [
+    "docs/ARCHITECTURE.md",
+    "docs/DEPLOYMENT.md",
+    "docker-compose.yml",
+    "semantic-enrichment/schemas/enrichment_schema.json",
+    "world-model-chat/schemas/cypher_query_schema.json"
+  ],
+  "known_limitations": [
+    "Compatibility declaration is demo-scoped and does not replace a formal product release review."
+  ],
+  "follow_up_actions": [
+    "Add formal product release version metadata.",
+    "Link declaration to release artifacts when packaging is introduced."
+  ]
+}

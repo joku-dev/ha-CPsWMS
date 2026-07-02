@@ -1,0 +1,20 @@
+{
+  "evidence_type": "resilience_evidence",
+  "status": "approved",
+  "owner": "Product Architect",
+  "approved_by": "Architecture Demo Review",
+  "approval_date": "2026-07-02",
+  "summary": "Demo resilience evidence based on Docker Compose restart policies, deployment checks and benchmark execution evidence.",
+  "evidence_refs": [
+    "docs/DEPLOYMENT.md",
+    "docker-compose.yml",
+    "benchmark/reports/performance_evolution_summary.md"
+  ],
+  "known_limitations": [
+    "No dedicated degraded-mode or failover test report exists yet."
+  ],
+  "follow_up_actions": [
+    "Add explicit restart and recovery tests.",
+    "Add degraded-mode behavior checks for unavailable Home Assistant, Neo4j or OpenAI dependencies."
+  ]
+}
