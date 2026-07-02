@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: joku-dev/devsecops-governance-as-code
-          ref: main
+          ref: architecture-baseline-l1-v0.1.0
           path: governance
 
       - name: Set up Python
@@ -89,6 +89,6 @@ jobs:
               "client_payload": {
                 "repository_id": "${{ github.repository }}",
                 "run_id": "${{ github.run_id }}",
-                "architecture_baseline_ref": "ha-CPsWMS-demo-baseline"
+                "architecture_baseline_ref": "architecture-baseline-l1-v0.1.0"
               }
             }'
