@@ -659,3 +659,177 @@
 2026-05-12 14:49:59.657+0000 INFO  name: system
 2026-05-12 14:49:59.660+0000 INFO  creationDate: 2026-05-12T14:11:11.803Z
 2026-05-12 14:49:59.663+0000 INFO  Started.
+2026-05-13 16:42:48.469+0000 INFO  Neo4j Server shutdown initiated by request
+2026-05-13 16:42:48.531+0000 INFO  Stopping...
+2026-05-14 17:06:23.271+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-05-14 17:06:23.314+0000 INFO  Starting...
+2026-05-14 17:06:25.322+0000 INFO  This instance is ServerId{bd2f45c2} (bd2f45c2-9e82-41a3-b22e-ccbf3dccc3df)
+2026-05-14 17:06:27.995+0000 INFO  ======== Neo4j 2026.04.0 ========
+2026-05-14 17:06:28.770+0000 INFO  X-Forward header processing enabled with security controls
+2026-05-14 17:06:28.771+0000 WARN  SECURITY WARNING: X-Forward headers accepted from any source - configure allow_proxies
+2026-05-14 17:06:28.772+0000 WARN  SECURITY WARNING: X-Forward headers accept any hostname - configure allow_hosts
+2026-05-14 17:06:31.026+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-05-14 17:06:32.032+0000 INFO  This server has built-in support for online monitoring through Fleet Manager. Visit https://console.neo4j.io to get started!
+2026-05-14 17:06:38.261+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-05-14 17:06:41.260+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-05-14 17:06:41.261+0000 INFO  Remote interface available at http://localhost:7474/
+2026-05-14 17:06:41.267+0000 INFO  id: CC420D544F7F8DF9139D15C937DD7582A24538E324B104FFB64E18FBF8E9A650
+2026-05-14 17:06:41.268+0000 INFO  name: system
+2026-05-14 17:06:41.269+0000 INFO  creationDate: 2026-05-12T14:11:11.803Z
+2026-05-14 17:06:41.270+0000 INFO  Started.
+2026-05-15 10:03:20.027+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 667f29d6-6848-47a1-9f29-5e2b62b0df83.
+2026-05-15 13:17:58.322+0000 WARN  [bolt-4] The client is unauthorized due to authentication failure.
+2026-05-16 07:14:42.553+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 160787ec-34ab-4738-a595-6488ea98f5ea.
+2026-05-16 12:22:20.062+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 60408e3c-6857-4771-974f-b47824297278.
+2026-05-16 17:24:19.267+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 0bc7d967-2010-471f-a058-d39444e7cab4.
+2026-05-17 07:26:01.447+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 6368a3d1-464c-4bb7-91ec-40a6843a2d20.
+2026-05-17 09:27:16.220+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 228709ef-b9b3-46d2-9943-4cfdfb7bb54d.
+2026-05-17 15:04:23.528+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-05-17 15:04:23.561+0000 INFO  Starting...
+2026-05-17 15:04:24.754+0000 INFO  This instance is ServerId{bd2f45c2} (bd2f45c2-9e82-41a3-b22e-ccbf3dccc3df)
+2026-05-17 15:04:26.525+0000 INFO  ======== Neo4j 2026.04.0 ========
+2026-05-17 15:04:27.163+0000 INFO  X-Forward header processing enabled with security controls
+2026-05-17 15:04:27.164+0000 WARN  SECURITY WARNING: X-Forward headers accepted from any source - configure allow_proxies
+2026-05-17 15:04:27.165+0000 WARN  SECURITY WARNING: X-Forward headers accept any hostname - configure allow_hosts
+2026-05-17 15:04:28.858+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-05-17 15:04:29.860+0000 INFO  This server has built-in support for online monitoring through Fleet Manager. Visit https://console.neo4j.io to get started!
+2026-05-17 15:04:30.306+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-05-17 15:04:32.738+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-05-17 15:04:32.740+0000 INFO  Remote interface available at http://localhost:7474/
+2026-05-17 15:04:32.747+0000 INFO  id: CC420D544F7F8DF9139D15C937DD7582A24538E324B104FFB64E18FBF8E9A650
+2026-05-17 15:04:32.749+0000 INFO  name: system
+2026-05-17 15:04:32.750+0000 INFO  creationDate: 2026-05-12T14:11:11.803Z
+2026-05-17 15:04:32.751+0000 INFO  Started.
+2026-05-17 15:52:41.124+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 70e2dc3f-6bad-4e5c-a877-390879cbff63.
+2026-05-17 17:26:20.621+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 64519961-cd5b-487e-9372-41855f4dd352.
+2026-05-17 17:57:24.821+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference aa73956a-6d96-4a74-b027-8c3194d6e9c3.
+2026-05-17 21:16:59.881+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 1795d385-8568-46b8-b354-f073952ef3a6.
+2026-05-17 22:17:18.870+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 30e5574a-1763-413a-9a72-d8a39b455ba0.
+2026-05-17 23:42:30.142+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 11f694d4-305a-43e8-b39e-66d9e395f56c.
+2026-05-18 02:32:23.228+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference bed62dc9-b354-4f8c-b3ef-9cb39aa0a24f.
+2026-05-18 02:48:19.758+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 3acc21f6-6664-4d62-b65d-42d796880d06.
+2026-05-18 03:20:13.774+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 7790682b-fb5c-403d-bb81-67146d13bc85.
+2026-05-19 12:48:00.333+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference a3f6ae4b-45d8-4b1c-946f-d57b2680d07a.
+2026-05-21 20:59:11.009+0000 WARN  [bolt-73] The client is unauthorized due to authentication failure.
+2026-05-21 20:59:21.947+0000 WARN  [bolt-74] The client is unauthorized due to authentication failure.
+2026-05-21 20:59:49.772+0000 WARN  [bolt-75] The client is unauthorized due to authentication failure.
+2026-05-21 21:03:11.325+0000 WARN  [bolt-76] The client is unauthorized due to authentication failure.
+2026-05-22 05:19:47.333+0000 WARN  [bolt-78] The client is unauthorized due to authentication failure.
+2026-05-22 09:46:50.520+0000 WARN  [bolt-99] The client is unauthorized due to authentication failure.
+2026-05-23 13:25:44.651+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 4b6685dd-001c-46b1-97de-b278d6d5fbb0.
+2026-05-25 10:21:52.802+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-05-25 10:21:52.830+0000 INFO  Starting...
+2026-05-25 10:21:53.926+0000 INFO  This instance is ServerId{bd2f45c2} (bd2f45c2-9e82-41a3-b22e-ccbf3dccc3df)
+2026-05-25 10:21:55.602+0000 INFO  ======== Neo4j 2026.04.0 ========
+2026-05-25 10:21:56.262+0000 INFO  X-Forward header processing enabled with security controls
+2026-05-25 10:21:56.263+0000 WARN  SECURITY WARNING: X-Forward headers accepted from any source - configure allow_proxies
+2026-05-25 10:21:56.264+0000 WARN  SECURITY WARNING: X-Forward headers accept any hostname - configure allow_hosts
+2026-05-25 10:21:57.735+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-05-25 10:21:58.738+0000 INFO  This server has built-in support for online monitoring through Fleet Manager. Visit https://console.neo4j.io to get started!
+2026-05-25 10:21:59.268+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-05-25 10:22:01.486+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-05-25 10:22:01.491+0000 INFO  Remote interface available at http://localhost:7474/
+2026-05-25 10:22:01.496+0000 INFO  id: CC420D544F7F8DF9139D15C937DD7582A24538E324B104FFB64E18FBF8E9A650
+2026-05-25 10:22:01.497+0000 INFO  name: system
+2026-05-25 10:22:01.498+0000 INFO  creationDate: 2026-05-12T14:11:11.803Z
+2026-05-25 10:22:01.499+0000 INFO  Started.
+2026-05-25 12:19:03.774+0000 WARN  [bolt-19] The client is unauthorized due to authentication failure.
+2026-05-25 12:19:54.166+0000 WARN  [bolt-25] The client is unauthorized due to authentication failure.
+2026-05-25 12:22:12.472+0000 WARN  [bolt-31] The client is unauthorized due to authentication failure.
+2026-05-25 12:29:27.638+0000 WARN  [bolt-34] The client is unauthorized due to authentication failure.
+2026-05-25 12:30:02.712+0000 WARN  [bolt-35] The client is unauthorized due to authentication failure.
+2026-05-25 12:33:55.642+0000 WARN  [bolt-38] The client is unauthorized due to authentication failure.
+2026-05-25 12:37:10.397+0000 WARN  [bolt-39] The client is unauthorized due to authentication failure.
+2026-05-25 12:39:57.382+0000 WARN  [bolt-42] The client is unauthorized due to authentication failure.
+2026-05-25 12:44:16.483+0000 WARN  [bolt-43] The client is unauthorized due to authentication failure.
+2026-05-25 12:44:20.043+0000 WARN  [bolt-44] The client has provided incorrect authentication details too many times in a row.
+2026-05-25 12:44:30.203+0000 WARN  [bolt-45] The client is unauthorized due to authentication failure.
+2026-05-25 18:59:00.217+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 971a60eb-61f5-49ad-bf98-212fe888ad1b.
+2026-05-25 19:38:37.119+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 5f89e6e3-c040-4b6c-af6d-4faa07ebf4c4.
+2026-05-25 20:10:23.197+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference b37147e0-d89e-4d3c-9baf-c60e7e537aed.
+2026-05-25 20:39:04.317+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference a3b111c3-4be2-44d9-93cf-a359f44eb835.
+2026-05-26 00:46:57.631+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference a7221cd5-8e6f-4754-8e3d-11d18170c5ff.
+2026-05-26 01:04:20.934+0000 INFO  Neo4j Server shutdown initiated by request
+2026-05-26 01:04:20.944+0000 INFO  Stopping...
+2026-05-26 13:24:30.703+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-05-26 13:24:30.732+0000 INFO  Starting...
+2026-05-26 13:24:31.839+0000 INFO  This instance is ServerId{bd2f45c2} (bd2f45c2-9e82-41a3-b22e-ccbf3dccc3df)
+2026-05-26 13:24:33.699+0000 INFO  ======== Neo4j 2026.04.0 ========
+2026-05-26 13:24:34.373+0000 INFO  X-Forward header processing enabled with security controls
+2026-05-26 13:24:34.374+0000 WARN  SECURITY WARNING: X-Forward headers accepted from any source - configure allow_proxies
+2026-05-26 13:24:34.375+0000 WARN  SECURITY WARNING: X-Forward headers accept any hostname - configure allow_hosts
+2026-05-26 13:24:36.117+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-05-26 13:24:37.120+0000 INFO  This server has built-in support for online monitoring through Fleet Manager. Visit https://console.neo4j.io to get started!
+2026-05-26 13:24:37.635+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-05-26 13:24:40.008+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-05-26 13:24:40.011+0000 INFO  Remote interface available at http://localhost:7474/
+2026-05-26 13:24:40.017+0000 INFO  id: CC420D544F7F8DF9139D15C937DD7582A24538E324B104FFB64E18FBF8E9A650
+2026-05-26 13:24:40.018+0000 INFO  name: system
+2026-05-26 13:24:40.019+0000 INFO  creationDate: 2026-05-12T14:11:11.803Z
+2026-05-26 13:24:40.019+0000 INFO  Started.
+2026-05-26 17:43:13.564+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference f93fd027-fe00-4245-b1f5-274ff013b0e0.
+2026-05-26 21:13:35.673+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference bcfedc74-bdef-4889-a44f-28a6e326bde6.
+2026-05-26 21:28:13.290+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 8f6be80a-a100-4995-9f06-7bf777cf1af1.
+2026-05-27 00:00:10.198+0000 INFO  Neo4j Server shutdown initiated by request
+2026-05-27 00:00:10.224+0000 INFO  Stopping...
+2026-05-27 09:51:32.120+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-05-27 09:51:32.147+0000 INFO  Starting...
+2026-05-27 09:51:33.255+0000 INFO  This instance is ServerId{bd2f45c2} (bd2f45c2-9e82-41a3-b22e-ccbf3dccc3df)
+2026-05-27 09:51:34.941+0000 INFO  ======== Neo4j 2026.04.0 ========
+2026-05-27 09:51:35.514+0000 INFO  X-Forward header processing enabled with security controls
+2026-05-27 09:51:35.515+0000 WARN  SECURITY WARNING: X-Forward headers accepted from any source - configure allow_proxies
+2026-05-27 09:51:35.516+0000 WARN  SECURITY WARNING: X-Forward headers accept any hostname - configure allow_hosts
+2026-05-27 09:51:37.034+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-05-27 09:51:38.037+0000 INFO  This server has built-in support for online monitoring through Fleet Manager. Visit https://console.neo4j.io to get started!
+2026-05-27 09:51:46.607+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-05-27 09:51:49.714+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-05-27 09:51:49.715+0000 INFO  Remote interface available at http://localhost:7474/
+2026-05-27 09:51:49.719+0000 INFO  id: CC420D544F7F8DF9139D15C937DD7582A24538E324B104FFB64E18FBF8E9A650
+2026-05-27 09:51:49.720+0000 INFO  name: system
+2026-05-27 09:51:49.720+0000 INFO  creationDate: 2026-05-12T14:11:11.803Z
+2026-05-27 09:51:49.721+0000 INFO  Started.
+2026-05-27 16:16:24.727+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 47f75013-1dd4-4b6e-b58d-8af60776e5b4.
+2026-05-27 18:23:50.277+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference aefde162-68d0-4366-a957-e53656bf16de.
+2026-05-27 18:42:00.893+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 5d232bd6-f3fc-49ba-aa28-9db666db7460.
+2026-05-27 19:17:38.236+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 6bf921e2-a6ac-4c8b-ab8a-b0bd010dcbee.
+2026-05-27 23:53:41.566+0000 INFO  Neo4j Server shutdown initiated by request
+2026-05-27 23:53:41.585+0000 INFO  Stopping...
+2026-05-28 06:30:24.734+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-05-28 06:30:24.758+0000 INFO  Starting...
+2026-05-28 06:30:25.861+0000 INFO  This instance is ServerId{bd2f45c2} (bd2f45c2-9e82-41a3-b22e-ccbf3dccc3df)
+2026-05-28 06:30:27.423+0000 INFO  ======== Neo4j 2026.04.0 ========
+2026-05-28 06:30:28.098+0000 INFO  X-Forward header processing enabled with security controls
+2026-05-28 06:30:28.099+0000 WARN  SECURITY WARNING: X-Forward headers accepted from any source - configure allow_proxies
+2026-05-28 06:30:28.100+0000 WARN  SECURITY WARNING: X-Forward headers accept any hostname - configure allow_hosts
+2026-05-28 06:30:29.963+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-05-28 06:30:31.242+0000 INFO  This server has built-in support for online monitoring through Fleet Manager. Visit https://console.neo4j.io to get started!
+2026-05-28 06:30:37.000+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-05-28 06:30:39.455+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-05-28 06:30:39.491+0000 INFO  Remote interface available at http://localhost:7474/
+2026-05-28 06:30:39.495+0000 INFO  id: CC420D544F7F8DF9139D15C937DD7582A24538E324B104FFB64E18FBF8E9A650
+2026-05-28 06:30:39.496+0000 INFO  name: system
+2026-05-28 06:30:39.496+0000 INFO  creationDate: 2026-05-12T14:11:11.803Z
+2026-05-28 06:30:39.497+0000 INFO  Started.
+2026-05-28 15:52:58.682+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 0d1a8e87-13ed-4a8c-a90f-13462b92f8f4.
+2026-05-28 17:37:16.522+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 76b52878-a427-4d6b-aac0-4274a7b716eb.
+2026-05-28 20:07:39.709+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference a1e3d1f6-5c19-4c5d-a72f-d5ac0b994381.
+2026-05-28 22:52:39.742+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 025c1ec0-cee9-4321-817b-86763fe125e3.
+2026-05-28 23:53:32.093+0000 ERROR Client triggered an unexpected error [Neo.DatabaseError.General.UnknownError]: Failed to transmit operation result: Response write failure, reference 3edeb5ab-37e8-4a52-916a-2ec89b023dd6.
+2026-05-29 12:06:22.056+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-05-29 12:06:22.079+0000 INFO  Starting...
+2026-05-29 12:06:23.162+0000 INFO  This instance is ServerId{bd2f45c2} (bd2f45c2-9e82-41a3-b22e-ccbf3dccc3df)
+2026-05-29 12:06:24.835+0000 INFO  ======== Neo4j 2026.04.0 ========
+2026-05-29 12:06:25.425+0000 INFO  X-Forward header processing enabled with security controls
+2026-05-29 12:06:25.426+0000 WARN  SECURITY WARNING: X-Forward headers accepted from any source - configure allow_proxies
+2026-05-29 12:06:25.427+0000 WARN  SECURITY WARNING: X-Forward headers accept any hostname - configure allow_hosts
+2026-05-29 12:06:27.036+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-05-29 12:06:28.039+0000 INFO  This server has built-in support for online monitoring through Fleet Manager. Visit https://console.neo4j.io to get started!
+2026-05-29 12:06:28.829+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-05-29 12:06:31.010+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-05-29 12:06:31.014+0000 INFO  Remote interface available at http://localhost:7474/
+2026-05-29 12:06:31.023+0000 INFO  id: CC420D544F7F8DF9139D15C937DD7582A24538E324B104FFB64E18FBF8E9A650
+2026-05-29 12:06:31.024+0000 INFO  name: system
+2026-05-29 12:06:31.025+0000 INFO  creationDate: 2026-05-12T14:11:11.803Z
+2026-05-29 12:06:31.026+0000 INFO  Started.
+2026-05-29 12:10:10.527+0000 INFO  Neo4j Server shutdown initiated by request
+2026-05-29 12:10:10.530+0000 INFO  Stopping...
