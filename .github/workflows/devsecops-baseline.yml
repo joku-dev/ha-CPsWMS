@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build source artifact and evidence
+      - name: Build source artifact and static analysis evidence
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -52,12 +52,107 @@ jobs:
             -f json \
             -o security/bandit-report.json || true
 
+      - name: Generate SBOM and vulnerability evidence
+        run: |
+          mkdir -p security
+
+          cat \
+            ha-sync/requirements.txt \
+            query-api/requirements.txt \
+            semantic-enrichment/requirements.txt \
+            world-model-chat/requirements.txt \
+            > security/combined-requirements.txt
+
+          python3 -m venv .venv-security-tools
+          .venv-security-tools/bin/python -m pip install --upgrade pip
+          .venv-security-tools/bin/python -m pip install pip-audit==2.10.1 cyclonedx-bom==7.3.0
+
+          python3 -m venv .venv-application-deps
+          .venv-application-deps/bin/python -m pip install --upgrade pip
+          .venv-application-deps/bin/python -m pip install \
+            -r ha-sync/requirements.txt \
+            -r query-api/requirements.txt \
+            -r semantic-enrichment/requirements.txt \
+            -r world-model-chat/requirements.txt
+
+          .venv-application-deps/bin/python -m pip freeze --local \
+            | .venv-security-tools/bin/cyclonedx-py requirements - \
+                --spec-version 1.5 \
+                --output-format JSON \
+                --output-file security/sbom.cyclonedx.json
+
+          .venv-security-tools/bin/pip-audit \
+            -r security/combined-requirements.txt \
+            --format json \
+            --output security/pip-audit-report.json || true
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          severity_rank = {
+              "none": 0,
+              "unknown": 1,
+              "low": 2,
+              "medium": 3,
+              "high": 4,
+              "critical": 5,
+          }
+
+          raw_report = json.loads(Path("security/pip-audit-report.json").read_text(encoding="utf-8"))
+          findings = []
+          max_severity = "none"
+
+          for dependency in raw_report.get("dependencies", []):
+              package = dependency.get("name", "")
+              version = dependency.get("version", "")
+              for vuln in dependency.get("vulns", []):
+                  aliases = vuln.get("aliases") or []
+                  vuln_id = vuln.get("id") or (aliases[0] if aliases else "unknown")
+                  severity = str(vuln.get("severity") or "unknown").lower()
+                  if severity_rank.get(severity, 1) > severity_rank.get(max_severity, 0):
+                      max_severity = severity
+                  findings.append(
+                      {
+                          "id": vuln_id,
+                          "package": package,
+                          "installed_version": version,
+                          "severity": severity,
+                          "description": vuln.get("description", ""),
+                          "fix_versions": vuln.get("fix_versions", []),
+                          "aliases": aliases,
+                      }
+                  )
+
+          normalized = {
+              "scanner": "pip-audit",
+              "scanner_version": "2.10.1",
+              "source": "security/pip-audit-report.json",
+              "requirements": "security/combined-requirements.txt",
+              "max_severity": max_severity,
+              "findings": findings,
+              "summary": {
+                  "dependency_count": len(raw_report.get("dependencies", [])),
+                  "finding_count": len(findings),
+              },
+          }
+          Path("security/vulnerability-scan.json").write_text(
+              json.dumps(normalized, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Assemble governance evidence
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
           python - <<'PY'
           import json
           import os
           from pathlib import Path
 
-          components = []
+          requirement_components = []
           for req in sorted(Path(".").glob("**/requirements.txt")):
               if ".git" in req.parts:
                   continue
@@ -66,34 +161,12 @@ jobs:
                   if not package or package.startswith("#"):
                       continue
                   name = package.split("==")[0].split(">=")[0].split("<=")[0].split("~=")[0]
-                  components.append({
+                  requirement_components.append({
                       "type": "library",
                       "name": name,
                       "purl": f"pkg:pypi/{name}",
                       "evidence": {"source": str(req)}
                   })
-
-          sbom = {
-              "bomFormat": "CycloneDX",
-              "specVersion": "1.5",
-              "version": 1,
-              "metadata": {
-                  "component": {
-                      "type": "application",
-                      "name": "ha-CPsWMS"
-                  }
-              },
-              "components": components,
-          }
-          Path("security/sbom.cyclonedx.json").write_text(json.dumps(sbom, indent=2) + "\n", encoding="utf-8")
-
-          vulnerability_scan = {
-              "scanner": "baseline-placeholder",
-              "max_severity": "none",
-              "findings": [],
-              "note": "Replace with Trivy, Grype, CodeQL, Snyk, or another approved scanner."
-          }
-          Path("security/vulnerability-scan.json").write_text(json.dumps(vulnerability_scan, indent=2) + "\n", encoding="utf-8")
 
           def load_json(path):
               path = Path(path)
@@ -101,6 +174,8 @@ jobs:
                   return None
               return json.loads(path.read_text(encoding="utf-8"))
 
+          vulnerability_scan = load_json("security/vulnerability-scan.json") or {"findings": []}
+          vulnerabilities = vulnerability_scan.get("findings", [])
           ruff_report = load_json("security/ruff-report.json") or []
           bandit_report = load_json("security/bandit-report.json") or {}
           bandit_results = bandit_report.get("results", [])
@@ -192,6 +267,7 @@ jobs:
               ],
               "security_event_sources": [
                   {"type": "vulnerability_scan", "path": "security/vulnerability-scan.json"},
+                  {"type": "pip_audit", "path": "security/pip-audit-report.json"},
                   {"type": "static_analysis_summary", "path": "security/static-analysis-summary.json"},
                   {"type": "bandit", "path": "security/bandit-report.json"},
               ],
@@ -298,7 +374,7 @@ jobs:
                       "name": component["name"],
                       "source_approved": True,
                   }
-                  for component in components
+                  for component in requirement_components
               ],
               "infrastructure": {
                   "iac_repository": {
@@ -318,7 +394,7 @@ jobs:
               "deployment": {
                   "required": True,
               },
-              "vulnerabilities": [],
+              "vulnerabilities": vulnerabilities,
               "waivers": [],
           }
           Path("governance/governance-run-input.json").write_text(
@@ -335,6 +411,8 @@ jobs:
             dist/ha-cpswms-source.tar.gz
             security/sbom.cyclonedx.json
             security/vulnerability-scan.json
+            security/pip-audit-report.json
+            security/combined-requirements.txt
             security/ruff-report.json
             security/bandit-report.json
             security/static-analysis-summary.json
