@@ -1,0 +1,15 @@
+{
+  "target": {
+    "path": "/home/runner/work/ha-CPsWMS/ha-CPsWMS/app",
+    "commit": "cada711",
+    "release_id": "cada7117a1dcbae35e16cf0ca892c11802fc3a2f"
+  },
+  "gate": {
+    "id": "devsecops_release_readiness",
+    "status": "pass",
+    "findings": []
+  },
+  "summary": {
+    "finding_count": 0
+  }
+}
