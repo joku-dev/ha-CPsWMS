@@ -33,7 +33,7 @@ jobs:
       - name: Checkout governance repository
         uses: actions/checkout@v4
         with:
-          repository: joku-dev/devsecops-governance-as-code
+          repository: joku-dev/devsecops-governance-framework
           ref: main
           path: governance
 
