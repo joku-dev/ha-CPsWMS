@@ -38,7 +38,7 @@ The pilot evaluates whether the repository can consume the released public basel
 | --- | --- | --- |
 | Application artifact | real | `dist/ha-cpswms-source.tar.gz` is produced by the workflow. |
 | SBOM | real | `security/sbom.cyclonedx.json` exists; workflow also generates dependency-based SBOM evidence. |
-| Vulnerability scan | real | The baseline workflow runs `pip-audit`, stores raw output in `security/pip-audit.json`, and writes normalized framework evidence to `security/vulnerability-scan.json`. |
+| Vulnerability scan | real | The baseline workflow runs `pip-audit`, stores raw output in `security/pip-audit-report.json`, and writes normalized framework evidence to `security/vulnerability-scan.json`. |
 | Static analysis | real | Workflow runs `ruff` and `bandit` and uploads reports. |
 | Governance run input | real | `governance/governance-run-input.json` is generated from repository and workflow context. |
 | Architecture evidence | real | `.governance/architecture/` contains approved demo evidence for the architecture baseline. |
@@ -89,7 +89,7 @@ The repository should remain in `report-only` until evidence quality is producti
 | Verify branch protection and required checks on `main`. | Application owner | To be planned | Required checks are documented and visible in repository settings. |
 | Decide artifact signing approach or document accepted pilot limitation. | Governance reviewer | To be planned | Signing evidence exists or a documented pilot exception is accepted. |
 | Confirm recurring evidence owners. | Application owner | To be planned | Owners are named in this decision record or repository documentation. |
-| Re-run the pilot after evidence normalization. | Pipeline owner | To be planned | DevSecOps Baseline and Architecture Runtime Governance complete successfully in `report-only`. |
+| Re-run the pilot after branch synchronization. | Pipeline owner | To be planned | DevSecOps Baseline and Architecture Runtime Governance complete successfully in `report-only`. |
 
 ## Approval
 
