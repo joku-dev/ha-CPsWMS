@@ -33,8 +33,8 @@ jobs:
       - name: Checkout governance repository
         uses: actions/checkout@v4
         with:
-          repository: joku-dev/devsecops-governance-as-code
-          ref: main
+          repository: joku-dev/devsecops-governance-framework
+          ref: l1-baseline-v1.1.3
           path: governance
 
       - name: Set up Python

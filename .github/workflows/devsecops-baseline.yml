@@ -423,8 +423,9 @@ jobs:
   devsecops-baseline:
     name: Central DevSecOps Baseline
     needs: prepare-devsecops-evidence
-    uses: joku-dev/devsecops-governance-as-code/.github/workflows/devsecops-baseline-l1-v1.1.3.yml@l1-baseline-v1.1.3
+    uses: joku-dev/devsecops-governance-framework/.github/workflows/devsecops-baseline-l1-v1.1.3.yml@l1-baseline-v1.1.3
     with:
+      governance_mode: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'block-on-error' || 'report-only' }}
       max_allowed_severity: high
       artifact_path: dist/ha-cpswms-source.tar.gz
       sbom_path: security/sbom.cyclonedx.json
@@ -453,8 +454,8 @@ jobs:
       - name: Checkout governance repository
         uses: actions/checkout@v4
         with:
-          repository: joku-dev/devsecops-governance-as-code
-          ref: main
+          repository: joku-dev/devsecops-governance-framework
+          ref: l1-baseline-v1.1.3
           path: governance
 
       - name: Set up Python
@@ -514,7 +515,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${RESULT_INTAKE_TOKEN}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/joku-dev/devsecops-governance-as-code/dispatches \
+            https://api.github.com/repos/joku-dev/devsecops-governance-framework/dispatches \
             -d '{
               "event_type": "governance-result-ready",
               "client_payload": {

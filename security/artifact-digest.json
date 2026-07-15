@@ -1,0 +1,7 @@
+{
+  "artifact": "dist/ha-cpswms-source.tar.gz",
+  "digest": "b6afc258bea6f27e58f89e2fd521ed2e087883e021d15cd0cfa1ef802254094b",
+  "algorithm": "sha256",
+  "generated_at": "2026-07-04T16:39:53Z",
+  "generated_by": "ci"
+}
