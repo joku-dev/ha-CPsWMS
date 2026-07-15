@@ -12,7 +12,7 @@
 | Governance reviewer | To be confirmed |
 | Decision date | 2026-07-15 |
 | Evaluated framework release or commit | `l1-baseline-v1.1.3`, `architecture-baseline-l1-v0.1.0` |
-| Evaluated workflow runs | DevSecOps Baseline `29407237525`, Architecture Runtime Governance `29407236968`, DevSecOps Governance `29407237030`, CI `29407236974` |
+| Evaluated workflow runs | DevSecOps Baseline `29412829111`, Architecture Runtime Governance `29412828689`, DevSecOps Governance `29412828606`, CI `29412780152` |
 
 ## Decision
 
@@ -42,7 +42,7 @@ The pilot evaluates whether the repository can consume the released public basel
 | Static analysis | real | Workflow runs `ruff` and `bandit` and uploads reports. |
 | Governance run input | real | `governance/governance-run-input.json` is generated from repository and workflow context. |
 | Architecture evidence | real | `.governance/architecture/` contains approved demo evidence for the architecture baseline. |
-| Workflow artifacts | real | Latest evaluated PR run produced successful governance workflow artifacts. |
+| Workflow artifacts | real | Latest evaluated branch and manual governance runs produced successful workflow artifacts. |
 | Job summary | real | DevSecOps and architecture governance workflows produced successful job summaries. |
 
 Use status values:
@@ -77,7 +77,7 @@ Use status values:
 
 ## Decision Rationale
 
-The public framework integration is technically working in `report-only` mode. The latest evaluated PR run completed successfully for CI, DevSecOps Baseline, DevSecOps Governance, and Architecture Runtime Governance.
+The public framework integration is technically working in `report-only` mode. The latest evaluated branch and manual governance runs completed successfully for CI, DevSecOps Baseline, DevSecOps Governance, and Architecture Runtime Governance.
 
 The repository should remain in `report-only` until evidence quality is production-ready. Vulnerability evidence is now scanner-produced by `pip-audit`, but severity enrichment, branch protection, required checks, waiver handling, signing evidence, and ownership still need confirmation before blocking checks are enabled.
 
@@ -103,7 +103,7 @@ The repository should remain in `report-only` until evidence quality is producti
 ## Notes
 
 - PR: `https://github.com/joku-dev/ha-CPsWMS/pull/13`
-- DevSecOps Baseline: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29407237525`
-- Architecture Runtime Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29407236968`
-- DevSecOps Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29407237030`
-- CI: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29407236974`
+- DevSecOps Baseline: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29412829111`
+- Architecture Runtime Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29412828689`
+- DevSecOps Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29412828606`
+- CI: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29412780152`
