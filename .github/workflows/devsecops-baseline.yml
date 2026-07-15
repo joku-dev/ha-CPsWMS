@@ -45,12 +45,21 @@ jobs:
 
           python3 -m venv .venv-static-analysis
           . .venv-static-analysis/bin/activate
-          pip install ruff bandit
+          pip install ruff bandit pip-audit
+          mkdir -p .audit-site
+          for requirements in \
+            ha-sync/requirements.txt \
+            query-api/requirements.txt \
+            semantic-enrichment/requirements.txt \
+            world-model-chat/requirements.txt; do
+            pip install --upgrade --target .audit-site -r "${requirements}"
+          done
 
           ruff check . --output-format json > security/ruff-report.json || true
           bandit -r ha-sync query-api semantic-enrichment semantic_core world-model-chat \
             -f json \
             -o security/bandit-report.json || true
+          pip-audit --path .audit-site --format json --output security/pip-audit.json || true
 
           python - <<'PY'
           import json
@@ -87,19 +96,35 @@ jobs:
           }
           Path("security/sbom.cyclonedx.json").write_text(json.dumps(sbom, indent=2) + "\n", encoding="utf-8")
 
-          vulnerability_scan = {
-              "scanner": "baseline-placeholder",
-              "max_severity": "none",
-              "findings": [],
-              "note": "Replace with Trivy, Grype, CodeQL, Snyk, or another approved scanner."
-          }
-          Path("security/vulnerability-scan.json").write_text(json.dumps(vulnerability_scan, indent=2) + "\n", encoding="utf-8")
-
           def load_json(path):
               path = Path(path)
               if not path.is_file():
                   return None
               return json.loads(path.read_text(encoding="utf-8"))
+
+          pip_audit_report = load_json("security/pip-audit.json") or {}
+          pip_audit_findings = []
+          for dependency in pip_audit_report.get("dependencies", []):
+              for vulnerability in dependency.get("vulns", []):
+                  pip_audit_findings.append({
+                      "package": dependency.get("name", ""),
+                      "installed_version": dependency.get("version", ""),
+                      "id": vulnerability.get("id", ""),
+                      "aliases": vulnerability.get("aliases", []),
+                      "fix_versions": vulnerability.get("fix_versions", []),
+                      "description": vulnerability.get("description", ""),
+                      "severity": "medium",
+                      "severity_source": "pip-audit finding without provider severity; classified as medium for governance thresholding",
+                  })
+          vulnerability_scan = {
+              "scanner": "pip-audit",
+              "scanner_output": "security/pip-audit.json",
+              "max_severity": "medium" if pip_audit_findings else "none",
+              "finding_count": len(pip_audit_findings),
+              "findings": pip_audit_findings,
+              "severity_policy": "pip-audit does not provide a stable severity field in JSON output; findings are conservatively classified as medium until severity enrichment is introduced.",
+          }
+          Path("security/vulnerability-scan.json").write_text(json.dumps(vulnerability_scan, indent=2) + "\n", encoding="utf-8")
 
           ruff_report = load_json("security/ruff-report.json") or []
           bandit_report = load_json("security/bandit-report.json") or {}
@@ -334,6 +359,7 @@ jobs:
           path: |
             dist/ha-cpswms-source.tar.gz
             security/sbom.cyclonedx.json
+            security/pip-audit.json
             security/vulnerability-scan.json
             security/ruff-report.json
             security/bandit-report.json
