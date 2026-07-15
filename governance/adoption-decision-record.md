@@ -12,7 +12,7 @@
 | Governance reviewer | To be confirmed |
 | Decision date | 2026-07-15 |
 | Evaluated framework release or commit | `l1-baseline-v1.1.3`, `architecture-baseline-l1-v0.1.0` |
-| Evaluated workflow runs | DevSecOps Baseline `29412829111`, Architecture Runtime Governance `29412828689`, DevSecOps Governance `29412828606`, CI `29412780152` |
+| Evaluated workflow runs | DevSecOps Baseline `29413214862`, Architecture Runtime Governance `29413214380`, DevSecOps Governance `29413214397`, CI `29413214386` |
 
 ## Decision
 
@@ -103,7 +103,7 @@ The repository should remain in `report-only` until evidence quality is producti
 ## Notes
 
 - PR: `https://github.com/joku-dev/ha-CPsWMS/pull/13`
-- DevSecOps Baseline: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29412829111`
-- Architecture Runtime Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29412828689`
-- DevSecOps Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29412828606`
-- CI: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29412780152`
+- DevSecOps Baseline: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29413214862`
+- Architecture Runtime Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29413214380`
+- DevSecOps Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29413214397`
+- CI: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29413214386`
