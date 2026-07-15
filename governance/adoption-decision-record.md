@@ -12,7 +12,7 @@
 | Governance reviewer | To be confirmed |
 | Decision date | 2026-07-15 |
 | Evaluated framework release or commit | `l1-baseline-v1.1.3`, `architecture-baseline-l1-v0.1.0` |
-| Evaluated workflow runs | DevSecOps Baseline `29413214862`, Architecture Runtime Governance `29413214380`, DevSecOps Governance `29413214397`, CI `29413214386` |
+| Evaluated workflow runs | DevSecOps Baseline `29414077429`, Architecture Runtime Governance `29414076871`, DevSecOps Governance `29414076853`, CI `29414076865` |
 
 ## Decision
 
@@ -22,13 +22,13 @@
 
 ## Context
 
-The `ha-CPsWMS` repository is used as a first real consumer pilot for the public DevSecOps Governance Framework.
+The `ha-CPsWMS` repository is an active `main`-branch consumer pilot for the public DevSecOps Governance Framework.
 
 The pilot evaluates whether the repository can consume the released public baselines without copying governance framework logic into the application repository.
 
 - DevSecOps baseline in scope: yes
 - Architecture governance in scope: yes
-- Branch or pull request scope: branch and pull request validation on `codex/use-architecture-baseline-release`
+- Branch or pull request scope: `main` branch validation after PR `13` merge
 - Evidence maturity: mixed; real repository, traceability, architecture, SBOM, vulnerability, and static-analysis evidence exist
 - Known limitations: no artifact signature, no protected signing-key evidence, no dedicated IaC repository evidence, monitoring integration not yet proven, vulnerability severity enrichment must be agreed before blocking mode
 
@@ -42,7 +42,7 @@ The pilot evaluates whether the repository can consume the released public basel
 | Static analysis | real | Workflow runs `ruff` and `bandit` and uploads reports. |
 | Governance run input | real | `governance/governance-run-input.json` is generated from repository and workflow context. |
 | Architecture evidence | real | `.governance/architecture/` contains approved demo evidence for the architecture baseline. |
-| Workflow artifacts | real | Latest evaluated branch and manual governance runs produced successful workflow artifacts. |
+| Workflow artifacts | real | Latest evaluated `main` runs produced successful workflow artifacts. |
 | Job summary | real | DevSecOps and architecture governance workflows produced successful job summaries. |
 
 Use status values:
@@ -77,7 +77,7 @@ Use status values:
 
 ## Decision Rationale
 
-The public framework integration is technically working in `report-only` mode. The latest evaluated branch and manual governance runs completed successfully for CI, DevSecOps Baseline, DevSecOps Governance, and Architecture Runtime Governance.
+The public framework integration is technically working on `main` in `report-only` mode. The latest evaluated `main` runs completed successfully for CI, DevSecOps Baseline, DevSecOps Governance, and Architecture Runtime Governance.
 
 The repository should remain in `report-only` until evidence quality is production-ready. Vulnerability evidence is now scanner-produced by `pip-audit`, but severity enrichment, branch protection, required checks, waiver handling, signing evidence, and ownership still need confirmation before blocking checks are enabled.
 
@@ -89,7 +89,7 @@ The repository should remain in `report-only` until evidence quality is producti
 | Verify branch protection and required checks on `main`. | Application owner | To be planned | Required checks are documented and visible in repository settings. |
 | Decide artifact signing approach or document accepted pilot limitation. | Governance reviewer | To be planned | Signing evidence exists or a documented pilot exception is accepted. |
 | Confirm recurring evidence owners. | Application owner | To be planned | Owners are named in this decision record or repository documentation. |
-| Re-run the pilot after branch synchronization. | Pipeline owner | To be planned | DevSecOps Baseline and Architecture Runtime Governance complete successfully in `report-only`. |
+| Re-run after the next readiness change. | Pipeline owner | To be planned | DevSecOps Baseline and Architecture Runtime Governance complete successfully in `report-only`. |
 
 ## Approval
 
@@ -103,7 +103,8 @@ The repository should remain in `report-only` until evidence quality is producti
 ## Notes
 
 - PR: `https://github.com/joku-dev/ha-CPsWMS/pull/13`
-- DevSecOps Baseline: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29413214862`
-- Architecture Runtime Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29413214380`
-- DevSecOps Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29413214397`
-- CI: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29413214386`
+- Merge commit: `085ba5e5b14fcf557cd22747d07ca287884b93df`
+- DevSecOps Baseline: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29414077429`
+- Architecture Runtime Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29414076871`
+- DevSecOps Governance: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29414076853`
+- CI: `https://github.com/joku-dev/ha-CPsWMS/actions/runs/29414076865`
