@@ -385,3 +385,9 @@ FastAPI-Doku:
 - Keine Secrets ins Repository committen.
 - `.env` lokal halten.
 - Neo4j-Daten (`neo4j/data`) und Logs (`neo4j/logs`) bleiben lokal.
+
+## Governance evidence maintenance
+
+See [Refresh governance evidence](docs/governance-evidence-refresh.md) for the
+11 September 2026 maintenance refresh and the distinction between new mainline
+evidence, manual diagnostics and centrally accepted results.
