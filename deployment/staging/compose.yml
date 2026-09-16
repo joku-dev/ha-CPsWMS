@@ -1,0 +1,42 @@
+# Dedicated staging only. Images are loaded from verified CI archives.
+services:
+  neo4j:
+    image: ${NEO4J_IMAGE:?verified image ID required}
+    pull_policy: never
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?local staging secret required}
+    volumes:
+      - graph-data:/data
+      - graph-logs:/logs
+    networks: [staging]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, 'cypher-shell -u neo4j -p "$${NEO4J_AUTH#neo4j/}" "RETURN 1" >/dev/null 2>&1']
+      interval: 10s
+      timeout: 10s
+      retries: 18
+    labels:
+      governance.environment: staging
+      governance.source-commit: ${SOURCE_COMMIT:?source commit required}
+  query-api:
+    image: ${QUERY_IMAGE:?verified image ID required}
+    pull_policy: never
+    ports: ['127.0.0.1:18080:8080']
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?local staging secret required}
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    networks: [staging]
+    restart: unless-stopped
+    labels:
+      governance.environment: staging
+      governance.source-commit: ${SOURCE_COMMIT:?source commit required}
+volumes:
+  graph-data:
+  graph-logs:
+networks:
+  staging:
+    internal: true

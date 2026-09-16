@@ -108,3 +108,10 @@ neuen Governance-Quellen oder abgeleiteten Kontrollen. Keine Änderung des
 veröffentlichten L1-Pakets, seiner OPA-Regeln, seiner Tags oder des akzeptierten
 Consumer-Lifecycle-Vertrags. Die zentralen Statusindizes erhalten diese
 Abdeckungsanalyse nicht als offiziellen Compliance-PASS.
+
+## Separates Staging als nächstes Ziel
+
+Der Maintainer hat separates Staging ausgewählt. Die
+[vorbereitete Konfiguration](../../deployment/staging/README.md) begrenzt den
+ersten Umfang auf Query API und Neo4j. Zielhost, konkrete Artefaktfreigabe und
+Deployment-Nachweise stehen noch aus; L1-013/014/016 werden nicht vorab geschlossen.
