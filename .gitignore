@@ -21,3 +21,9 @@ __pycache__/
 # Local editor files
 .vscode/
 .DS_Store
+
+# Measured L1 workflow outputs
+.l1-evidence/
+.l1-input/
+.coverage
+.venv-l1/

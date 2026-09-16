@@ -34,6 +34,13 @@ Ontologie-, Zeit- und Kausalmodellierung.
 - `governance/adoption-decision-record.md`: Pilot-Entscheidung fuer die Nutzung des public DevSecOps Governance Frameworks
 - `.env.example`: Beispielkonfiguration
 
+## Gemessene L1-Nachweise
+
+Der Workflow **L1 Measured Evidence** ergänzt echte Anwendungstests, isolierte
+HTTP-/Neo4j-Integration, Container-Builds, CycloneDX-SBOMs und Trivy-Scans.
+Die [Abdeckungsmatrix aller 16 L1-Kontrollen](docs/quality/L1_MEASURED_EVIDENCE.md)
+trennt gemessene Nachweise, Findings und offene Freigabe-/Betriebsanforderungen.
+
 ## Schnellstart
 
 1. `.env` anlegen:

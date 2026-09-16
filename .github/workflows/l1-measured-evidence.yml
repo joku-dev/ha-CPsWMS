@@ -1,0 +1,155 @@
+name: L1 Measured Evidence
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: l1-measured-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  source:
+    name: Source tests and SAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - name: Install application and pinned test tools
+        run: |
+          python -m pip install -r quality/tool-requirements.txt -r ha-sync/requirements.txt -r query-api/requirements.txt -r semantic-enrichment/requirements.txt -r world-model-chat/requirements.txt
+      - name: Execute tests and security analysis
+        run: python scripts/l1/evidence.py source --out .l1-evidence/source
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: l1-source
+          path: .l1-evidence/source/
+          if-no-files-found: error
+          retention-days: 14
+
+  images:
+    name: Image evidence (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [ha-sync, query-api, semantic-enrichment, world-model-chat, neo4j]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # v0.2.6
+        with:
+          version: v0.70.0
+          cache: true
+      - name: Build, inventory, scan and archive the exact image
+        run: python scripts/l1/evidence.py image --service '${{ matrix.service }}' --out '.l1-evidence/image-${{ matrix.service }}'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: l1-image-${{ matrix.service }}
+          path: .l1-evidence/image-${{ matrix.service }}/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 1
+
+  platform:
+    name: GitHub control evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - name: Read actual GitHub records
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/l1/evidence.py platform --out .l1-evidence/platform
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: l1-platform
+          path: .l1-evidence/platform/
+          if-no-files-found: error
+          retention-days: 14
+
+  runtime:
+    name: Real HTTP and Neo4j tests
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: l1-image-query-api
+          path: .l1-input/query-api
+      - name: Install test driver
+        run: python -m pip install -r quality/tool-requirements.txt -r query-api/requirements.txt python-dotenv
+      - name: Exercise archived query image against seeded Neo4j
+        env:
+          L1_QUERY_IMAGE_DIR: .l1-input/query-api
+        run: python scripts/l1/evidence.py runtime --out .l1-evidence/runtime
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: l1-runtime
+          path: .l1-evidence/runtime/
+          if-no-files-found: error
+          retention-days: 14
+
+  report:
+    name: L1 coverage report
+    if: always()
+    needs: [source, images, platform, runtime]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: l1-*
+          path: .l1-input
+      - name: Verify downloaded bytes and assess all 16 controls
+        run: |
+          for path in .l1-input/l1-*; do
+            mv "$path" "${path/l1-input\/l1-/l1-input\/}"
+          done
+          python scripts/l1/report.py --input .l1-input --out .l1-evidence/report
+      - name: Publish report in run summary
+        if: always()
+        run: |
+          if [ -f .l1-evidence/report/l1-coverage.md ]; then
+            cat .l1-evidence/report/l1-coverage.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: l1-control-coverage
+          path: .l1-evidence/report/
+          if-no-files-found: error
+          retention-days: 30
