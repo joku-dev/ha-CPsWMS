@@ -1,0 +1,12 @@
+{
+  "python": {
+    "reference": "python:3.12-slim@sha256:78387bc3881b8273120a12ebe6c1ab22b018ccc2c9adf565ae1ac9b536e184ea",
+    "source_tag": "3.12-slim",
+    "digest": "sha256:78387bc3881b8273120a12ebe6c1ab22b018ccc2c9adf565ae1ac9b536e184ea"
+  },
+  "neo4j": {
+    "reference": "neo4j:5.26-community@sha256:bb268a2f1b4f3c79e4bd1a00a82a6e63bbd4fcc4088da03c1b2380655f256cb2",
+    "source_tag": "5.26-community",
+    "digest": "sha256:bb268a2f1b4f3c79e4bd1a00a82a6e63bbd4fcc4088da03c1b2380655f256cb2"
+  }
+}

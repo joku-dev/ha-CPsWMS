@@ -1,0 +1,11 @@
+{
+  "scope": "Executable technical regression requirements; not approved system requirements or full application coverage",
+  "requirements": [
+    {"id": "HA-TEST-IDENTITY-001", "requirement": "Resolve and normalize source entities with recorded identity decisions", "test_class_prefix": "tests.semantic_core.", "components": ["semantic_core"]},
+    {"id": "HA-TEST-SYNC-001", "requirement": "Preserve state values, nested entity references and unique source domains", "test_class_prefix": "quality_tests.test_component_behavior", "test_name_prefix": "test_sync_", "components": ["ha-sync"]},
+    {"id": "HA-TEST-CHAT-001", "requirement": "Reject tested unsafe queries, low confidence and unsupported parameter structures", "test_class_prefix": "quality_tests.test_component_behavior", "test_name_prefix": "test_chat_", "components": ["world-model-chat"]},
+    {"id": "HA-TEST-API-001", "requirement": "Return known graph answers over HTTP with bounded limits, reject unknown routes, expose DB failures and recover", "test_class_prefix": "quality_tests.test_runtime", "components": ["query-api", "neo4j"]},
+    {"id": "HA-TEST-ENRICH-001", "requirement": "Execute canonical enrichment writes against actual Neo4j", "test_class_prefix": "quality_tests.test_runtime", "test_name_prefix": "test_enrichment_", "components": ["semantic-enrichment"]}
+  ],
+  "remaining_scope": ["Live Home Assistant acquisition", "LLM answer correctness and paid provider behavior", "Complete storage/write-path contracts", "Approved system requirement coverage", "Production deployment and security-event retention"]
+}
