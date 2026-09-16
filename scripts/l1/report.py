@@ -76,7 +76,8 @@ def inspect_image(directory, service):
         raise ValueError('SBOM has no measured components')
     scan = load(directory / 'vulnerabilities.json')
     results = scan.get('Results', [])
-    if not results or scan.get('ArtifactID') != subject['image_id']:
+    # Trivy 0.70 ArtifactID hashes image + repository; ImageID is the Docker config digest.
+    if not results or scan.get('Metadata', {}).get('ImageID') != subject['image_id']:
         raise ValueError('Scan missing results or bound to another image')
     for name in ('build', 'sbom', 'vulnerabilities', 'archive'):
         if not execution_ok(directory, name):
@@ -125,11 +126,16 @@ def build_report(base, expected):
     identity_ok = False
     protection = None
     if 'platform' not in errors:
-        commit = load(platform / 'commit.json')
-        identity_ok = commit.get('http_status') == 200 and commit['data'].get('sha') == expected['commit'] and bool(commit['data'].get('author', {}).get('id') if commit['data'].get('author') else False)
-        response = load(platform / 'protection.json')
-        if response.get('http_status') == 200:
-            protection = response['data']
+        try:
+            commit = load(platform / 'commit.json')
+            identity_ok = commit.get('http_status') == 200 and commit['data'].get('sha') == expected['commit'] and bool(commit['data'].get('author', {}).get('id') if commit['data'].get('author') else False)
+            response = load(platform / 'protection.json')
+            if response.get('http_status') == 200:
+                protection = response['data']
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors['platform'] = str(exc)
+            identity_ok = False
+            protection = None
     row(2, 'measured' if identity_ok else 'gap',
         'GitHub commit identity queried directly. PR/review responses retained; this does not invent an independent approval.', ['platform/commit.json', 'platform/pulls.json'])
     row(3, 'partial' if protection else 'gap',
