@@ -66,7 +66,7 @@ def image_evidence(tmp_path):
     (tmp_path / 'image.tar').write_bytes(b'test archive')
     write(tmp_path / 'subject.json', {'service': 'query-api', 'image_id': image_id,
                                     'archive_sha256': sha(tmp_path / 'image.tar')})
-    write(tmp_path / 'sbom.cyclonedx.json', {'bomFormat': 'CycloneDX', 'components': [{'name': 'python'}]})
+    write(tmp_path / 'sbom.cyclonedx.json', {'bomFormat': 'CycloneDX', 'components': [{'name': 'python'}], 'metadata': {'component': {'type': 'container', 'properties': [{'name': 'aquasecurity:trivy:ImageID', 'value': image_id}]}}})
     write(tmp_path / 'vulnerabilities.json', {'ArtifactID': 'sha256:' + 'b' * 64,
         'Metadata': {'ImageID': image_id}, 'Results': [{'Target': 'os', 'Class': 'os-pkgs'}]})
     for name in ('build', 'sbom', 'vulnerabilities', 'archive'):
@@ -98,3 +98,11 @@ def test_partial_platform_capture_remains_explicit_gap(tmp_path):
     result = build_report(tmp_path, context())
     assert 'platform' in result['evidence_errors']
     assert result['controls'][1]['coverage'] == 'gap'
+
+
+def test_sbom_for_another_image_is_rejected(image_evidence):
+    write(image_evidence / 'sbom.cyclonedx.json', {'bomFormat': 'CycloneDX',
+        'components': [{'name': 'python'}], 'metadata': {'component': {'type': 'container',
+        'properties': [{'name': 'aquasecurity:trivy:ImageID', 'value': 'sha256:' + 'c' * 64}]}}})
+    with pytest.raises(ValueError, match='SBOM bound to another image'):
+        inspect_image(image_evidence, 'query-api')

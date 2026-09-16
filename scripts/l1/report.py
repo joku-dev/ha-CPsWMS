@@ -74,6 +74,10 @@ def inspect_image(directory, service):
     sbom = load(directory / 'sbom.cyclonedx.json')
     if sbom.get('bomFormat') != 'CycloneDX' or not sbom.get('components'):
         raise ValueError('SBOM has no measured components')
+    component = sbom.get('metadata', {}).get('component', {})
+    properties = {p.get('name'): p.get('value') for p in component.get('properties', [])}
+    if component.get('type') != 'container' or properties.get('aquasecurity:trivy:ImageID') != subject['image_id']:
+        raise ValueError('SBOM bound to another image')
     scan = load(directory / 'vulnerabilities.json')
     results = scan.get('Results', [])
     # Trivy 0.70 ArtifactID hashes image + repository; ImageID is the Docker config digest.
