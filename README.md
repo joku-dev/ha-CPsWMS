@@ -43,6 +43,13 @@ trennt gemessene Nachweise, Findings und offene Freigabe-/Betriebsanforderungen.
 
 ## Schnellstart
 
+Compose baut Neo4j jetzt auf der gepinnten Linie **5.26.30** mit Debian-Sicherheits-
+korrekturen. Bei vorhandenen Daten aus einem früheren `neo4j:latest`-Container
+vor dem Start Datenbankversion, Store-Kompatibilität und Backup prüfen; kein
+ungeprüfter Downgrade. Details und Restbefunde stehen in der
+[Container-Patch-Bewertung](docs/quality/CONTAINER_SECURITY_REMEDIATION.md).
+Die separate Staging-Konfiguration verwendet eigene Volumes.
+
 1. `.env` anlegen:
 
 ```bash

@@ -112,11 +112,16 @@ jobs:
         with:
           name: l1-image-query-api
           path: .l1-input/query-api
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: l1-image-neo4j
+          path: .l1-input/neo4j
       - name: Install test driver
         run: python -m pip install -r quality/tool-requirements.txt -r query-api/requirements.txt python-dotenv
       - name: Exercise archived query image against seeded Neo4j
         env:
           L1_QUERY_IMAGE_DIR: .l1-input/query-api
+          L1_NEO4J_IMAGE_DIR: .l1-input/neo4j
         run: python scripts/l1/evidence.py runtime --out .l1-evidence/runtime
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()

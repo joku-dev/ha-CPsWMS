@@ -1,5 +1,4 @@
 """Actual HTTP/Neo4j/container integration in an isolated, disposable CI network."""
-import hashlib
 import importlib.util
 import json
 import os
@@ -17,6 +16,9 @@ from neo4j.exceptions import Neo4jError, ServiceUnavailable, SessionExpired
 from neo4j import GraphDatabase
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'scripts/l1'))
+from evidence import context
+from report import inspect_image, verify_bundle
 
 
 def docker(*args):
@@ -37,22 +39,25 @@ def runtime():
         pytest.skip('Explicit L1_RUNTIME_TESTS=1 and disposable Docker required')
     out = Path(os.environ['L1_EVIDENCE_DIR'])
     out.mkdir(parents=True, exist_ok=True)
-    image_dir = Path(os.environ['L1_QUERY_IMAGE_DIR'])
-    manifest = json.loads((image_dir / 'subject.json').read_text())
-    archive = image_dir / 'image.tar'
-    assert hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest() == manifest['archive_sha256']
-    assert manifest['commit'] == os.environ['GITHUB_SHA']
-    docker('load', '--input', str(archive))
-    assert docker('image', 'inspect', '--format', '{{.Id}}', manifest['image_id']) == manifest['image_id']
+    subjects = {}
+    for service, env in [('query-api', 'L1_QUERY_IMAGE_DIR'), ('neo4j', 'L1_NEO4J_IMAGE_DIR')]:
+        image_dir = Path(os.environ[env])
+        verify_bundle(image_dir, context())
+        subject = inspect_image(image_dir, service)
+        assert subject['commit'] == os.environ['GITHUB_SHA']
+        docker('load', '--input', str(image_dir / 'image.tar'))
+        assert docker('image', 'inspect', '--format', '{{.Id}}', subject['image_id']) == subject['image_id']
+        subjects[service] = subject
+    manifest = subjects['query-api']
     tag = 'l1-test-' + uuid.uuid4().hex[:12]
     db, api = tag + '-db', tag + '-api'
     password = 'isolated-test-password'
-    neo4j_image = json.loads((ROOT / 'quality/runtime-images.json').read_text())['neo4j']['reference']
+    neo4j_image = subjects['neo4j']['image_id']
     docker('network', 'create', tag)
     driver = None
     started = time.time()
     try:
-        docker('run', '-d', '--name', db, '--network', tag, '--network-alias', 'graph',
+        docker('run', '--pull=never', '-d', '--name', db, '--network', tag, '--network-alias', 'graph',
                '-p', '127.0.0.1::7687', '-e', 'NEO4J_AUTH=neo4j/' + password, neo4j_image)
         port = docker('port', db, '7687/tcp').split(':')[-1]
         driver = GraphDatabase.driver('bolt://127.0.0.1:' + port, auth=('neo4j', password), connection_timeout=3)
@@ -68,7 +73,7 @@ def runtime():
             # Dedicated empty container; no production credentials, graph or volume.
             session.run("CREATE (i:Integration {domain:'test_zigbee'}), (e:Entity {entity_id:'sensor.l1', friendly_name:'L1 Sensor', state:'on'}), (c:Capability {name:'l1_temperature'}), (raw:RawEntity {raw_entity_id:'l1-raw'}), (canonical:CanonicalEntity {canonical_id:'l1-canonical'}), (e)-[:PROVIDED_BY]->(i), (e)-[:PROVIDES_CAPABILITY {confidence:0.95}]->(c), (e)-[:HAS_RAW_REPRESENTATION]->(raw), (raw)-[:RESOLVED_TO]->(canonical)").consume()
             assert session.run('MATCH (n) RETURN count(n) AS count').single()['count'] == 5
-        docker('run', '-d', '--name', api, '--network', tag, '-p', '127.0.0.1::8080',
+        docker('run', '--pull=never', '-d', '--name', api, '--network', tag, '-p', '127.0.0.1::8080',
                '-e', 'NEO4J_URI=bolt://graph:7687', '-e', 'NEO4J_USER=neo4j',
                '-e', 'NEO4J_PASSWORD=' + password, manifest['image_id'])
         api_port = docker('port', api, '8080/tcp').split(':')[-1]

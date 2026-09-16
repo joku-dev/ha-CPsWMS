@@ -1,6 +1,7 @@
 services:
   neo4j:
-    image: neo4j:latest
+    build: ./deployment/images/neo4j
+    image: ha-cpswms-neo4j:local
     container_name: ha-neo4j
     ports:
       - "7474:7474"   # Browser UI

@@ -181,7 +181,7 @@ def build_report(base, expected):
     row(11, 'partial' if all_images else 'gap', 'Archives and evidence hashes recomputed after artifact download. Repository access controls/retention and independent provenance remain separate checks.', image_refs)
     row(12, 'measured' if all_images else 'gap', 'Unique content identities verified for the actual archived artifacts.', image_refs)
     row(13, 'gap', 'No production/staging deployment approval is recorded. A push, green run, PR merge or review exception is not deployment approval.', ['platform/environments.json'])
-    row(14, 'gap', 'Tests deploy only the archived query image in disposable CI. Approved-artifact enforcement in a target deployment is not yet evidenced.', ['runtime/deployment.json'])
+    row(14, 'gap', 'Tests deploy the archived query and Neo4j images in disposable CI. Approved-artifact enforcement in a target deployment is not yet evidenced.', ['runtime/deployment.json'])
     row(15, 'measured' if not errors else 'gap', 'Machine-readable raw reports and run-bound manifests; every referenced file is hashed and rechecked.', ['*/manifest.json'])
     row(16, 'partial' if runtime_ok else 'gap', 'Actual CI container image IDs and HTTP/database outage logs retained. No production deployment register or operational security-event retention is claimed.', ['runtime/deployment.json', 'runtime/query-api.log', 'runtime/neo4j.log', 'runtime/junit.xml'])
     return {'schema_version': '1.0', 'report_type': 'l1-measured-evidence-coverage',

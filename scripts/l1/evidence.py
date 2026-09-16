@@ -83,8 +83,10 @@ def image(out, service):
     images = json.loads((ROOT / 'quality/runtime-images.json').read_text())
     tag = 'l1-' + service + ':' + context()['commit'][:12]
     if service == 'neo4j':
-        ok = execute(out, 'build', ['docker', 'pull', images['neo4j']['reference']])
-        tag = images['neo4j']['reference']
+        ok = execute(out, 'build', ['docker', 'build', '--pull', '--build-arg',
+            'NEO4J_IMAGE=' + images['neo4j']['reference'], '--label',
+            'org.opencontainers.image.revision=' + context()['commit'],
+            '-f', 'deployment/images/neo4j/Dockerfile', '-t', tag, 'deployment/images/neo4j'])
     else:
         build_context = '.' if service == 'ha-sync' else service
         ok = execute(out, 'build', ['docker', 'build', '--pull', '--build-arg',
@@ -110,7 +112,7 @@ def image(out, service):
             'archive_sha256': sha(out / 'image.tar'), 'commit': context()['commit'],
             'python_base': images['python']['reference'] if service != 'neo4j' else None,
             'external_image': images['neo4j']['reference'] if service == 'neo4j' else None,
-            'scope': 'actual built/pulled image; no production release authorization'})
+            'scope': 'actual patched image built from pinned upstream; no production release authorization'})
     seal(out)
     return all(checks)
 
