@@ -1,6 +1,5 @@
-
-ARG PYTHON_IMAGE=python:3.12-slim@sha256:78387bc3881b8273120a12ebe6c1ab22b018ccc2c9adf565ae1ac9b536e184ea
-FROM ${PYTHON_IMAGE}
+ARG NEO4J_IMAGE=neo4j:5.26-community@sha256:bb268a2f1b4f3c79e4bd1a00a82a6e63bbd4fcc4088da03c1b2380655f256cb2
+FROM ${NEO4J_IMAGE}
 
 # Debian security fixes; keep exact versions reviewable and fail if unavailable.
 RUN apt-get update \
@@ -10,14 +9,3 @@ RUN apt-get update \
         libpcre2-8-0=10.46-1~deb13u2 \
         libsqlite3-0=3.46.1-7+deb13u2 \
     && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-ENV PYTHONUNBUFFERED=1
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-CMD ["python", "-u", "semantic_enrich.py"]

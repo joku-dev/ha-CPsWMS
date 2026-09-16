@@ -40,7 +40,7 @@ Required Check eingerichtet und der bisherige Blocking-Modus wird nicht geänder
 | 011 | Archiv-/Nachweis-Hashes nach Download erneut prüfen | Zugriffsschutz, Aufbewahrung und unabhängige Provenienz separat |
 | 012 | Inhaltsbasierte Artefaktidentität | Keine manuell behauptete Versionszuordnung |
 | 013 | Erfassung vorhandener GitHub-Environments | Autorisierte Zielumgebung/Release-Freigabe fehlt |
-| 014 | CI startet exakt das untersuchte Query-Image | Freigegebene Artefaktauswahl im Zieldeployment fehlt |
+| 014 | CI startet exakt die untersuchten Query-/Neo4j-Images | Freigegebene Artefaktauswahl im Zieldeployment fehlt |
 | 015 | JSON, JUnit, Coverage, Rohberichte, Manifeste | Run-/Commit-Bindung und Byteprüfung |
 | 016 | Echte CI-Deployment-IDs, HTTP-/DB-Logs, Ausfalltest | Produktionsregister und Security-Event-Aufbewahrung fehlen |
 
@@ -53,8 +53,8 @@ bezahlten LLM-Aufrufe oder Zugriffe auf eine reale Home-Assistant-Instanz statt.
 Die bisherigen semantischen Unit-Tests bleiben als Unit-Tests gekennzeichnet.
 Coverage wird für alle Anwendungsmodule erfasst; niedrige Abdeckung wird sichtbar.
 
-Die Container-Integration lädt genau das archivierte Query-Image, prüft dessen
-Digest und startet es in einem nur für diesen Lauf erzeugten Docker-Netzwerk.
+Die Container-Integration lädt die archivierten Query-/Neo4j-Images, prüft
+Run-/Commit-Bindung, Manifeste, SBOM-/Scan-Identität und Archiv-Digests und startet sie in einem nur für diesen Lauf erzeugten Docker-Netzwerk.
 Neo4j erhält fünf deterministische Testknoten einschließlich tatsächlicher
 Beziehungen. Geprüft werden HTTP-Health, Fähigkeiten, Integrations-/Entity-Auswirkung,
 unbekannte Routen, parametrisierte Eingaben, eine echte kanonische Enrichment-
@@ -66,10 +66,10 @@ antworten und Wiederanlauf sind technische CI-Nachweise, keine Produktions-SLOs.
 
 ## Lieferkette und Nachweisgrenzen
 
-Vier Anwendungskomponenten werden gebaut; Neo4j wird als gepinntes Drittanbieter-
-Image bezogen. `quality/runtime-images.json` bindet die Basisimages per Digest.
+Alle fünf Images werden gebaut; Neo4j erhält eine eigene Patch-Schicht auf
+dem gepinnten Drittanbieter-Image. `quality/runtime-images.json` bindet die Basisimages per Digest.
 Jedes Image erhält eine echte CycloneDX-SBOM, Trivy-JSON und ein Docker-Archiv.
-Die Query-Integration verwendet das heruntergeladene Archiv, keine zweite
+Die Integration verwendet beide heruntergeladenen Archive, keine zweite
 unabhängige Neuauflösung der Abhängigkeiten. Python-Abhängigkeiten sind noch
 nicht gelockt; die SBOM dokumentiert die im jeweiligen Build installierten Versionen.
 
@@ -98,7 +98,7 @@ python -m pytest tests quality_tests --ignore=quality_tests/test_runtime.py -q
 ```
 
 Die Integrationsprüfung benötigt ausdrücklich `L1_RUNTIME_TESTS=1`, eine
-Commit-/Run-Identität und das aus dem Image-Job erzeugte Query-Archiv. Ein Skip
+Commit-/Run-Identität und beide aus den Image-Jobs erzeugten Query-/Neo4j-Archive. Ein Skip
 ersetzt keinen erfolgreichen Integrationstest im Bericht.
 
 ## Artefaktklassifikation und Release-Auswirkung
@@ -115,3 +115,9 @@ Der Maintainer hat separates Staging ausgewählt. Die
 [vorbereitete Konfiguration](../../deployment/staging/README.md) begrenzt den
 ersten Umfang auf Query API und Neo4j. Zielhost, konkrete Artefaktfreigabe und
 Deployment-Nachweise stehen noch aus; L1-013/014/016 werden nicht vorab geschlossen.
+
+## Behandlung der Container-Schwachstellen
+
+Die [Patch- und Befundbewertung](CONTAINER_SECURITY_REMEDIATION.md) dokumentiert
+die Debian-Korrekturen, Messläufe und noch offene Risiken. Rohbefunde werden
+nicht unterdrückt; eine technische Bewertung ist keine Deployment-Freigabe.
