@@ -1,0 +1,71 @@
+{
+  "run_url": "https://github.com/joku-dev/ha-CPsWMS/actions/runs/35129799416",
+  "context": {
+    "attempt": "1",
+    "commit": "59a27e91e3d56a8d4d78dbe14eb27133396c88d0",
+    "event": "pull_request",
+    "observed_at": "2026-09-16T17:42:41.945664+00:00",
+    "repository": "joku-dev/ha-CPsWMS",
+    "run_id": "35129799416"
+  },
+  "source_head": "b4080176d522ac74f0af8c21b3a38eb9e9e8f039",
+  "method": "Group raw HIGH/CRITICAL records by CVE, severity, package, installed version and fixed version; retain affected images. Scan hashes and image identity verified; no suppression.",
+  "images": [
+    {
+      "service": "ha-sync",
+      "image_id": "sha256:b7170a30dae783035250d14e1c30879696ae5f42865323f4d355e0358369a885",
+      "scan_sha256": "5f458e1d39a2f2908144293f5b511b85009a9bfdf956f977b91dbfd6553402cb",
+      "patch_packages": {
+        "gzip": "1.13-1+deb13u1",
+        "libpcre2-8-0": "10.46-1~deb13u2",
+        "libsqlite3-0": "3.46.1-7+deb13u2",
+        "perl-base": "5.40.1-6+deb13u1"
+      }
+    },
+    {
+      "service": "neo4j",
+      "image_id": "sha256:34af627178138cc1ef7634e4f53f77b4ce56eed127a5a95646867fbd97ed5dbe",
+      "scan_sha256": "0cd9f0b8fe8de1061441d5bb37a2c8944dfac71fdaa372060518b06fa5f3f4af",
+      "patch_packages": {
+        "gzip": "1.13-1+deb13u1",
+        "libpcre2-8-0": "10.46-1~deb13u2",
+        "libsqlite3-0": "3.46.1-7+deb13u2",
+        "perl-base": "5.40.1-6+deb13u1"
+      }
+    },
+    {
+      "service": "query-api",
+      "image_id": "sha256:01c3ce0363b2b1cff52d5e1331de1204979809930067d1cfda0fa61823b9b4dd",
+      "scan_sha256": "f9dae7cbce580ca9a1ec8f586e832f2cc53461bcc752ad6bb14bf7a68f73614c",
+      "patch_packages": {
+        "gzip": "1.13-1+deb13u1",
+        "libpcre2-8-0": "10.46-1~deb13u2",
+        "libsqlite3-0": "3.46.1-7+deb13u2",
+        "perl-base": "5.40.1-6+deb13u1"
+      }
+    },
+    {
+      "service": "semantic-enrichment",
+      "image_id": "sha256:213e899283c53b5e2f3bdf11a12e0aab8bff54470f5c080ddc62915bbb467506",
+      "scan_sha256": "dfebe2eb3740281f1abf2a3667074178cca9a2d76310aab630d74d6378ee4033",
+      "patch_packages": {
+        "gzip": "1.13-1+deb13u1",
+        "libpcre2-8-0": "10.46-1~deb13u2",
+        "libsqlite3-0": "3.46.1-7+deb13u2",
+        "perl-base": "5.40.1-6+deb13u1"
+      }
+    },
+    {
+      "service": "world-model-chat",
+      "image_id": "sha256:2cc212f67bb33a39bdbce6d6eb4a41f58593aa61012f8a2fb32344a9dcd14a93",
+      "scan_sha256": "3acfe2ffceccd4dc18a25cb2f68b1570a7e2c8ed5db6ac9fd442a7d180457564",
+      "patch_packages": {
+        "gzip": "1.13-1+deb13u1",
+        "libpcre2-8-0": "10.46-1~deb13u2",
+        "libsqlite3-0": "3.46.1-7+deb13u2",
+        "perl-base": "5.40.1-6+deb13u1"
+      }
+    }
+  ],
+  "official_risk_acceptance": false
+}
