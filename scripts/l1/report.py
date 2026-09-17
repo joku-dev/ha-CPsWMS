@@ -195,6 +195,21 @@ def build_report(base, expected):
             'limitations': traceability['remaining_scope']}
 
 
+def typed_evidence_manifest(report, input_path):
+    """Declare the five-image transport only when the whole profile is valid."""
+    if report['evidence_errors'] or set(report['images']) != set(SERVICES):
+        return None
+    return {
+        'profile': 'ha-cpswms-container-trust-v1', 'enforcement': 'report-only',
+        'context': {key: report['context'][key] for key in ('repository', 'commit', 'run_id', 'attempt', 'event')},
+        'images': {service: {
+            'artifact_name': 'l1-image-' + service,
+            'image_id': report['images'][service]['image_id'],
+            'archive_sha256': load(input_path / ('image-' + service) / 'subject.json')['archive_sha256'],
+        } for service in SERVICES},
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, required=True)
@@ -202,6 +217,11 @@ def main():
     args = parser.parse_args()
     report = build_report(args.input, context())
     write(args.out / 'l1-coverage.json', report)
+    # Stable transport contract for the central five-image Trust collector.
+    # A partial report never advertises a complete Typed Evidence bundle.
+    manifest = typed_evidence_manifest(report, args.input)
+    if manifest is not None:
+        write(args.out / 'typed-evidence-manifest.json', manifest)
     lines = ['# L1 measured evidence coverage', '', f'Reference: `{BASELINE}`. Scope: CI validation, report-only.',
              '**This is evidence coverage, not a production approval or replacement baseline result.**', '',
              '| Control | Coverage | Observation |', '|---|---|---|']

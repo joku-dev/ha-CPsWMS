@@ -1,0 +1,44 @@
+name: Notify Typed Evidence Intake
+
+on:
+  workflow_run:
+    workflows: [L1 Measured Evidence]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: typed-evidence-notify-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.id == github.event.repository.id
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Request central full-archive Trust verification
+        env:
+          GH_TOKEN: ${{ secrets.GH_RESULT_INTAKE_TOKEN }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, tempfile
+          payload = {'event_type': 'typed-evidence-trust-ready', 'client_payload': {
+              'repository_id': 'joku-dev/ha-CPsWMS',
+              'run_id': os.environ['SOURCE_RUN_ID'],
+              'artifact_name': 'l1-control-coverage',
+          }}
+          with tempfile.NamedTemporaryFile(mode='w', suffix='.json') as body:
+              json.dump(payload, body)
+              body.flush()
+              subprocess.run(['gh', 'api', '--method', 'POST',
+                  'repos/joku-dev/devsecops-governance-framework/dispatches',
+                  '--input', body.name], check=True)
+          PY

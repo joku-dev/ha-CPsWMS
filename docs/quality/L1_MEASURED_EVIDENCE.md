@@ -121,3 +121,21 @@ Deployment-Nachweise stehen noch aus; L1-013/014/016 werden nicht vorab geschlos
 Die [Patch- und Befundbewertung](CONTAINER_SECURITY_REMEDIATION.md) dokumentiert
 die Debian-Korrekturen, Messläufe und noch offene Risiken. Rohbefunde werden
 nicht unterdrückt; eine technische Bewertung ist keine Deployment-Freigabe.
+
+## Central Typed Evidence Trust
+
+A successful main push run now emits `typed-evidence-manifest.json` inside
+`l1-control-coverage`. It declares the exact five image artifacts, image IDs,
+archive digests and source run context. It is omitted for incomplete evidence.
+
+`Notify Typed Evidence Intake` runs only after that producer workflow completes
+successfully on a main push. It sends `typed-evidence-trust-ready` to the central
+governance repository using the existing `GH_RESULT_INTAKE_TOKEN`. It executes
+no code from the triggering run. PR and manual runs do not trigger this intake.
+
+The central collector downloads all five full image artifacts, checks archive
+hashes, Docker config/layer identities, scanner output and run context, then
+opens an operational intake PR. The central viewer updates after that PR merges.
+Trust is report-only and does not grant release approval, accept vulnerabilities
+or claim an independent scanner attestation. Collection failures are visible in
+the notification/central intake workflow and must not be reported as success.
