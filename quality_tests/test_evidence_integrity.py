@@ -110,12 +110,15 @@ def test_typed_manifest_requires_and_binds_all_five_images(tmp_path):
         subject = tmp_path / ('image-' + service) / 'subject.json'
         subject.parent.mkdir()
         write(subject, {'archive_sha256': service.replace('-', '0').ljust(64, '0')[:64]})
-        report['images'][service] = {'image_id': 'sha256:' + service.replace('-', '0').ljust(64, '0')[:64]}
+        write(subject.parent / 'sbom.cyclonedx.json', {'bomFormat': 'CycloneDX', 'components': [{'name': service}]})
+        report['images'][service] = {'image_id': 'sha256:' + service.replace('-', '0').ljust(64, '0')[:64], 'components': 1}
     manifest = typed_evidence_manifest(report, tmp_path)
-    assert manifest['profile'] == 'ha-cpswms-container-trust-v1'
+    assert manifest['profile'] == 'ha-cpswms-container-evidence-v2'
     assert manifest['enforcement'] == 'report-only'
     assert set(manifest['images']) == set(report['images'])
     assert manifest['images']['query-api']['artifact_name'] == 'l1-image-query-api'
+    assert len(manifest['images']['query-api']['sbom_sha256']) == 64
+    assert manifest['images']['query-api']['sbom_component_count'] == 1
 
     incomplete = {**report, 'images': dict(report['images'])}
     incomplete['images'].pop('neo4j')

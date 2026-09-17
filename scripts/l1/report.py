@@ -200,12 +200,14 @@ def typed_evidence_manifest(report, input_path):
     if report['evidence_errors'] or set(report['images']) != set(SERVICES):
         return None
     return {
-        'profile': 'ha-cpswms-container-trust-v1', 'enforcement': 'report-only',
+        'profile': 'ha-cpswms-container-evidence-v2', 'enforcement': 'report-only',
         'context': {key: report['context'][key] for key in ('repository', 'commit', 'run_id', 'attempt', 'event')},
         'images': {service: {
             'artifact_name': 'l1-image-' + service,
             'image_id': report['images'][service]['image_id'],
             'archive_sha256': load(input_path / ('image-' + service) / 'subject.json')['archive_sha256'],
+            'sbom_sha256': sha(input_path / ('image-' + service) / 'sbom.cyclonedx.json'),
+            'sbom_component_count': report['images'][service]['components'],
         } for service in SERVICES},
     }
 
