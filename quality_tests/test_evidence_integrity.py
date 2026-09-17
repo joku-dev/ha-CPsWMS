@@ -7,7 +7,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/l1'))
 from evidence import context, seal, sha, write
-from report import build_report, execution_ok, inspect_image, junit, verify_bundle
+from report import build_report, execution_ok, inspect_image, junit, typed_evidence_manifest, verify_bundle
 
 
 def test_changed_raw_bytes_are_rejected(tmp_path):
@@ -98,6 +98,30 @@ def test_partial_platform_capture_remains_explicit_gap(tmp_path):
     result = build_report(tmp_path, context())
     assert 'platform' in result['evidence_errors']
     assert result['controls'][1]['coverage'] == 'gap'
+
+
+def test_typed_manifest_requires_and_binds_all_five_images(tmp_path):
+    report = {
+        'context': {key: context()[key] for key in ('repository', 'commit', 'run_id', 'attempt', 'event')},
+        'evidence_errors': {},
+        'images': {},
+    }
+    for service in ('ha-sync', 'semantic-enrichment', 'query-api', 'world-model-chat', 'neo4j'):
+        subject = tmp_path / ('image-' + service) / 'subject.json'
+        subject.parent.mkdir()
+        write(subject, {'archive_sha256': service.replace('-', '0').ljust(64, '0')[:64]})
+        report['images'][service] = {'image_id': 'sha256:' + service.replace('-', '0').ljust(64, '0')[:64]}
+    manifest = typed_evidence_manifest(report, tmp_path)
+    assert manifest['profile'] == 'ha-cpswms-container-trust-v1'
+    assert manifest['enforcement'] == 'report-only'
+    assert set(manifest['images']) == set(report['images'])
+    assert manifest['images']['query-api']['artifact_name'] == 'l1-image-query-api'
+
+    incomplete = {**report, 'images': dict(report['images'])}
+    incomplete['images'].pop('neo4j')
+    assert typed_evidence_manifest(incomplete, tmp_path) is None
+    failed = {**report, 'evidence_errors': {'image-neo4j': 'failed'}}
+    assert typed_evidence_manifest(failed, tmp_path) is None
 
 
 def test_sbom_for_another_image_is_rejected(image_evidence):
