@@ -127,6 +127,8 @@ nicht unterdrückt; eine technische Bewertung ist keine Deployment-Freigabe.
 A successful main push run now emits `typed-evidence-manifest.json` inside
 `l1-control-coverage`. It declares the exact five image artifacts, image IDs,
 archive digests and source run context. It is omitted for incomplete evidence.
+Profile `ha-cpswms-container-evidence-v2` additionally declares the SHA-256 and
+measured CycloneDX component count for every SBOM.
 
 `Notify Typed Evidence Intake` runs only after that producer workflow completes
 successfully on a main push. It sends `typed-evidence-trust-ready` to the central
@@ -134,8 +136,9 @@ governance repository using the existing `GH_RESULT_INTAKE_TOKEN`. It executes
 no code from the triggering run. PR and manual runs do not trigger this intake.
 
 The central collector downloads all five full image artifacts, checks archive
-hashes, Docker config/layer identities, scanner output and run context, then
-opens an operational intake PR. The central viewer updates after that PR merges.
+hashes, Docker config/layer identities, scanner output, CycloneDX SBOM bytes and
+run context, then writes separate `vulnerability_scan` and `sbom` Trust records
+and opens an operational intake PR. The central viewer updates after that PR merges.
 Trust is report-only and does not grant release approval, accept vulnerabilities
 or claim an independent scanner attestation. Collection failures are visible in
 the notification/central intake workflow and must not be reported as success.
