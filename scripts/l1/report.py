@@ -11,7 +11,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from evidence import ROOT, SERVICES, context, sha, write
+from evidence import ROOT, SERVICES, archive_identity, context, sha, write
 
 BASELINE = 'l1-baseline-v1.1.3'
 TITLES = [
@@ -71,6 +71,11 @@ def inspect_image(directory, service):
         raise ValueError('Invalid image identity')
     if sha(directory / 'image.tar') != subject['archive_sha256']:
         raise ValueError('Archive digest mismatch')
+    identity = archive_identity(directory / 'image.tar')
+    if (subject.get('archive_config_digest') != subject['image_id']
+            or identity['config_digest'] != subject['image_id']
+            or subject.get('archive_tag') not in identity['repo_tags']):
+        raise ValueError('Archive transport identity mismatch')
     sbom = load(directory / 'sbom.cyclonedx.json')
     if sbom.get('bomFormat') != 'CycloneDX' or not sbom.get('components'):
         raise ValueError('SBOM has no measured components')
@@ -179,7 +184,7 @@ def build_report(base, expected):
     row(10, 'findings' if vulnerabilities else 'partial' if all_images else 'gap',
         f'{len(vulnerabilities)} image/package findings (may repeat across images). No release assessment or risk acceptance is inferred from scanner completion.', ['image-' + s + '/vulnerabilities.json' for s in SERVICES])
     row(11, 'partial' if all_images else 'gap', 'Archives and evidence hashes recomputed after artifact download. Repository access controls/retention and independent provenance remain separate checks.', image_refs)
-    row(12, 'measured' if all_images else 'gap', 'Unique content identities verified for the actual archived artifacts.', image_refs)
+    row(12, 'measured' if all_images else 'gap', 'Build config digests, transported tags and archive hashes verified for the actual archived artifacts; target runtime IDs are recorded after import.', image_refs)
     row(13, 'gap', 'No production/staging deployment approval is recorded. A push, green run, PR merge or review exception is not deployment approval.', ['platform/environments.json'])
     row(14, 'gap', 'Tests deploy the archived query and Neo4j images in disposable CI. Approved-artifact enforcement in a target deployment is not yet evidenced.', ['runtime/deployment.json'])
     row(15, 'measured' if not errors else 'gap', 'Machine-readable raw reports and run-bound manifests; every referenced file is hashed and rechecked.', ['*/manifest.json'])

@@ -3,6 +3,11 @@
 Dieser Ordner enthält Hilfs- und Überprüfungsskripte für CI, Validierung und einmalige Aufgaben.
 
 Enthaltene Dateien:
+- `l1/evidence.py`: Erzeugt laufgebundene Test-, Scan-, SBOM-, Plattform- und
+  Container-Nachweise. Container-Archive enthalten einen Transport-Tag; Build-
+  Config-Digest und Zielhost-Laufzeit-ID werden bewusst getrennt behandelt.
+- `l1/report.py`: Prüft die Nachweis-Bundles und bildet ihre gemessene Abdeckung
+  auf die 16 Anforderungen der L1-Baseline ab.
 - `ci_validate_enrichment.py`: Validiert Enricher-Konfigurationen, Prompt-/Schema-Konsistenz und ggf. strukturierte Ausgabeformate.
 - `backfill_canonical_semantics.py`: Migriert bestehende semantische Beziehungen von `Entity` auf die zugeordnete `CanonicalEntity`.
 - `backfill_dependency_edges.py`: Leitet deterministische `DEPENDS_ON`-, `IMPACTS`- und `DEGRADES`-Kanten aus vorhandenen Integrations-, Capability- und Failure-Impact-Fakten ab.
