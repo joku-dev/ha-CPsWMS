@@ -46,13 +46,15 @@ def runtime():
         subject = inspect_image(image_dir, service)
         assert subject['commit'] == os.environ['GITHUB_SHA']
         docker('load', '--input', str(image_dir / 'image.tar'))
-        assert docker('image', 'inspect', '--format', '{{.Id}}', subject['image_id']) == subject['image_id']
+        runtime_image_id = docker('image', 'inspect', '--format', '{{.Id}}', subject['archive_tag'])
+        assert runtime_image_id.startswith('sha256:') and len(runtime_image_id) == 71
+        subject['runtime_image_id'] = runtime_image_id
         subjects[service] = subject
     manifest = subjects['query-api']
     tag = 'l1-test-' + uuid.uuid4().hex[:12]
     db, api = tag + '-db', tag + '-api'
     password = 'isolated-test-password'
-    neo4j_image = subjects['neo4j']['image_id']
+    neo4j_image = subjects['neo4j']['runtime_image_id']
     docker('network', 'create', tag)
     driver = None
     started = time.time()
@@ -78,7 +80,7 @@ def runtime():
                '--user', '65532:65532', '--read-only', '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=64m',
                '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true', '--pids-limit', '128',
                '-e', 'NEO4J_URI=bolt://graph:7687', '-e', 'NEO4J_USER=neo4j',
-               '-e', 'NEO4J_PASSWORD=' + password, '-e', 'PYTHONDONTWRITEBYTECODE=1', manifest['image_id'])
+               '-e', 'NEO4J_PASSWORD=' + password, '-e', 'PYTHONDONTWRITEBYTECODE=1', manifest['runtime_image_id'])
         api_port = docker('port', api, '8080/tcp').split(':')[-1]
         base = 'http://127.0.0.1:' + api_port
         for _ in range(40):
@@ -97,7 +99,10 @@ def runtime():
         for name in (api, db):
             result = subprocess.run(['docker', 'inspect', '--format', '{{.Image}}', name], capture_output=True, text=True, check=False)
             if result.returncode == 0:
-                deployments.append({'container': name, 'image_id': result.stdout.strip(), 'environment': 'ephemeral-ci'})
+                subject = subjects['query-api' if name == api else 'neo4j']
+                deployments.append({'container': name, 'runtime_image_id': result.stdout.strip(),
+                    'build_config_digest': subject['image_id'], 'archive_tag': subject['archive_tag'],
+                    'archive_sha256': subject['archive_sha256'], 'environment': 'ephemeral-ci'})
                 logs = subprocess.run(['docker', 'logs', name], capture_output=True, text=True, check=False)
                 (out / (('query-api' if name == api else 'neo4j') + '.log')).write_text(logs.stdout + logs.stderr)
         (out / 'deployment.json').write_text(json.dumps({'commit': os.environ['GITHUB_SHA'], 'run_id': os.environ['GITHUB_RUN_ID'], 'scope': 'ephemeral-ci; not production deployment or release authorization', 'started_unix': started, 'finished_unix': time.time(), 'containers': deployments}, indent=2) + '\n')

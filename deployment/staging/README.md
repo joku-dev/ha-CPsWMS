@@ -2,20 +2,23 @@
 
 Vom Maintainer am 16. September 2026 ausgewählt. Vorgesehener erster Umfang:
 `query-api` und Neo4j, getrennt von Produktion, Home Assistant und LLM-Diensten.
-Der Zielhost ist noch nicht benannt; diese Konfiguration ist **nicht deployt**.
+Der vorbereitete Zielhost ist die Proxmox-VM `ha-cpswms-stg-01`
+(`192.168.200.197`). Diese Konfiguration ist **noch nicht deployt**.
 
 ## Bereitstellungsprofil für die neue VM
 
-Ein geeigneter Host ist aktuell nicht vorhanden. Planungswert für diese kleine
-Staging-Instanz: **4 vCPU, 8 GiB RAM, 60 GiB SSD**, Linux mit Sicherheitsupdates,
-Docker Engine und Compose. Das ist ein Startprofil für Testdaten, keine
-Kapazitätszusage für produktive Graphen oder Last.
+Die Staging-VM besitzt **6 vCPU, 11 GiB RAM und 85 GiB virtuelle Disk**. Das
+Ubuntu-Root-Dateisystem nutzt davon 82,5 GiB. Docker Engine 29.8.1 und Compose
+5.5.1 sind aktiv; QEMU Guest Agent, Zeitsynchronisierung, automatische
+Sicherheitsupdates und der Headless-Start über `multi-user.target` sind
+eingerichtet. Das ist ein Profil für Testdaten, keine Kapazitätszusage für
+produktive Graphen oder Last.
 
-Eingehend wird nur SSH aus dem administrativen Netz benötigt. HTTP wird zunächst
+Eingehend wird nur SSH aus `192.168.1.0/24` benötigt; UFW ist auf dem Zielhost
+aktiviert. HTTP wird zunächst
 über einen SSH-Tunnel genutzt (`localhost:18080`); Datenbank und API werden nicht
-öffentlich freigegeben. Eigener Hostname, Betreiber, Backup-/Log-Aufbewahrung
-und Betriebsort sind vor Bereitstellung festzulegen. Bei Cloud-Betrieb kommt ein
-freigegebener Kostenrahmen hinzu. Es wurde noch keine Infrastruktur bestellt.
+öffentlich freigegeben. Backup-/Log-Aufbewahrung und Betreiberverantwortung
+werden mit dem ersten Deployment-Nachweis festgelegt.
 
 ## Anforderungen an den Zielhost
 
@@ -43,8 +46,10 @@ aber weder deren Bewertung noch eine dokumentierte Staging-Freigabe.
 1. Einen erfolgreichen **push/main**-Lauf von `L1 Measured Evidence` auswählen.
 2. `l1-image-query-api`, `l1-image-neo4j` und `l1-control-coverage` aus genau diesem
    Run und Versuch herunterladen; Run-ID und Commit gegen GitHub prüfen.
-3. Beide Bundle-Manifeste und Archiv-Hashes prüfen. SBOM und Scan müssen zur
-   Image-ID gehören. Der Abdeckungsbericht muss ohne Evidenzfehler vorliegen.
+3. Beide Bundle-Manifeste und Archiv-Hashes prüfen. SBOM und Scan müssen zum
+   Build-Config-Digest gehören; derselbe Digest und der deklarierte Transport-Tag
+   müssen im Image-Archiv enthalten sein. Der Abdeckungsbericht muss ohne
+   Evidenzfehler vorliegen.
 4. Aktuelle Security-Findings bewerten. Der erste Messlauf enthält auch hohe und
    kritische CVE-Einträge; erfolgreicher Build/Scan ist keine Risikofreigabe.
 5. Ein konkretes Freigabeprotokoll mit Ziel `staging`, beiden Image-IDs,
@@ -54,11 +59,16 @@ aber weder deren Bewertung noch eine dokumentierte Staging-Freigabe.
 ## Geplanter Deployment-Ablauf
 
 - Image-Archive auf dem benannten Host nachprüfen und mit `docker load` laden.
-- Image-IDs unmittelbar nach dem Laden erneut mit den freigegebenen IDs vergleichen.
+- Den im Nachweis deklarierten `archive_tag` nach dem Laden auflösen und die
+  tatsächliche Zielhost-Laufzeit-ID protokollieren. Docker-Engines mit klassischem
+  und containerd-basiertem Image-Speicher können dasselbe Archiv unter
+  unterschiedlichen lokalen Laufzeit-IDs führen; der verifizierte
+  Build-Config-Digest im Archiv bleibt die Bindung für SBOM und Scan.
 - Ein zufälliges Neo4j-Passwort nur auf dem Zielhost in einer Datei mit Modus 0600
   erzeugen; keine Passwörter in Git, Workflow-Artefakten oder Logs speichern.
 - Eine lokale Env-Datei mit `NEO4J_IMAGE`, `QUERY_IMAGE`, `NEO4J_PASSWORD` und
-  `SOURCE_COMMIT` anlegen. Die Image-Werte sind exakte `sha256:...`-IDs.
+  `SOURCE_COMMIT` anlegen. Die Image-Werte sind die auf diesem Zielhost nach dem
+  verifizierten Import beobachteten, exakten `sha256:...`-Laufzeit-IDs.
 - Mit `docker compose --project-name ha-cpswms-staging --env-file <lokale Datei>
   -f deployment/staging/compose.yml up -d --wait` starten.
 - `/health` über Loopback prüfen. Tatsächliche Container-Image-IDs,

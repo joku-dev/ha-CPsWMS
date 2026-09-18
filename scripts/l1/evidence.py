@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import sys
+import tarfile
 import time
 import urllib.error
 import urllib.request
@@ -28,6 +29,30 @@ def write(path, value):
 def sha(path):
     with Path(path).open('rb') as handle:
         return hashlib.file_digest(handle, 'sha256').hexdigest()
+
+
+def archive_identity(path):
+    """Return the config digest and transported tags from one Docker archive."""
+    with tarfile.open(path, 'r:') as archive:
+        manifest_file = archive.extractfile('manifest.json')
+        if manifest_file is None:
+            raise ValueError('Docker archive has no manifest')
+        manifest = json.load(manifest_file)
+        if not isinstance(manifest, list) or len(manifest) != 1:
+            raise ValueError('Expected exactly one Docker image')
+        entry = manifest[0]
+        config_name = entry.get('Config')
+        config_file = archive.extractfile(config_name) if isinstance(config_name, str) else None
+        if config_file is None:
+            raise ValueError('Docker archive has no image config')
+        digest = 'sha256:' + hashlib.sha256(config_file.read()).hexdigest()
+        expected = Path(config_name).name.removesuffix('.json')
+        if expected != digest.removeprefix('sha256:'):
+            raise ValueError('Docker archive config path does not match its content')
+        tags = entry.get('RepoTags') or []
+        if not isinstance(tags, list) or not all(isinstance(tag, str) for tag in tags):
+            raise ValueError('Docker archive tags are invalid')
+        return {'config_digest': digest, 'repo_tags': tags, 'layer_count': len(entry.get('Layers') or [])}
 
 
 def context():
@@ -106,9 +131,19 @@ def image(out, service):
         '--scanners', 'vuln', '--format', 'json', '--exit-code', '0',
         '--output', str(out / 'vulnerabilities.json'), image_id]))
     checks.append(execute(out, 'trivy-version', ['trivy', 'version']))
-    checks.append(execute(out, 'archive', ['docker', 'save', '--output', str(out / 'image.tar'), image_id]))
+    # Save by tag so Docker engines using different image stores can resolve the
+    # imported image even when their local runtime ID differs from the config digest.
+    checks.append(execute(out, 'archive', ['docker', 'save', '--output', str(out / 'image.tar'), tag]))
+    transport = None
+    if checks[-1]:
+        try:
+            transport = archive_identity(out / 'image.tar')
+            checks.append(transport['config_digest'] == image_id and tag in transport['repo_tags'])
+        except (OSError, ValueError, KeyError, tarfile.TarError):
+            checks.append(False)
     if all(checks):
         write(out / 'subject.json', {'service': service, 'image_id': image_id,
+            'archive_config_digest': transport['config_digest'], 'archive_tag': tag,
             'archive_sha256': sha(out / 'image.tar'), 'commit': context()['commit'],
             'python_base': images['python']['reference'] if service != 'neo4j' else None,
             'external_image': images['neo4j']['reference'] if service == 'neo4j' else None,

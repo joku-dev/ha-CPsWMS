@@ -1,5 +1,9 @@
 """Negative tests prevent stale, tampered and failed tool output becoming evidence."""
+import hashlib
+import io
+import json
 import sys
+import tarfile
 from pathlib import Path
 
 import pytest
@@ -7,7 +11,14 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts/l1'))
 from evidence import context, seal, sha, write
-from report import build_report, execution_ok, inspect_image, junit, typed_evidence_manifest, verify_bundle
+from report import (
+    build_report,
+    execution_ok,
+    inspect_image,
+    junit,
+    typed_evidence_manifest,
+    verify_bundle,
+)
 
 
 def test_changed_raw_bytes_are_rejected(tmp_path):
@@ -63,8 +74,19 @@ def test_missing_outputs_never_satisfy_controls(tmp_path):
 @pytest.fixture
 def image_evidence(tmp_path):
     image_id = 'sha256:' + 'a' * 64
-    (tmp_path / 'image.tar').write_bytes(b'test archive')
+    archive_tag = 'l1-query-api:test'
+    config = b'{"architecture":"amd64","os":"linux"}'
+    image_id = 'sha256:' + hashlib.sha256(config).hexdigest()
+    manifest = json.dumps([{'Config': 'blobs/sha256/' + image_id.removeprefix('sha256:'),
+                            'RepoTags': [archive_tag], 'Layers': []}]).encode()
+    with tarfile.open(tmp_path / 'image.tar', 'w') as archive:
+        for name, content in [('manifest.json', manifest),
+                              ('blobs/sha256/' + image_id.removeprefix('sha256:'), config)]:
+            info = tarfile.TarInfo(name)
+            info.size = len(content)
+            archive.addfile(info, io.BytesIO(content))
     write(tmp_path / 'subject.json', {'service': 'query-api', 'image_id': image_id,
+                                    'archive_config_digest': image_id, 'archive_tag': archive_tag,
                                     'archive_sha256': sha(tmp_path / 'image.tar')})
     write(tmp_path / 'sbom.cyclonedx.json', {'bomFormat': 'CycloneDX', 'components': [{'name': 'python'}], 'metadata': {'component': {'type': 'container', 'properties': [{'name': 'aquasecurity:trivy:ImageID', 'value': image_id}]}}})
     write(tmp_path / 'vulnerabilities.json', {'ArtifactID': 'sha256:' + 'b' * 64,
@@ -82,6 +104,14 @@ def test_other_image_scan_is_rejected(image_evidence):
     write(image_evidence / 'vulnerabilities.json', {'ArtifactID': 'sha256:' + 'a' * 64,
         'Metadata': {'ImageID': 'sha256:' + 'c' * 64}, 'Results': [{'Target': 'os'}]})
     with pytest.raises(ValueError, match='another image'):
+        inspect_image(image_evidence, 'query-api')
+
+
+def test_archive_without_declared_transport_tag_is_rejected(image_evidence):
+    subject = json.loads((image_evidence / 'subject.json').read_text())
+    subject['archive_tag'] = 'l1-query-api:other'
+    write(image_evidence / 'subject.json', subject)
+    with pytest.raises(ValueError, match='transport identity'):
         inspect_image(image_evidence, 'query-api')
 
 
