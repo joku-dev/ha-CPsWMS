@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "decision": "approved_for_staging",
+  "approved_at": "2026-09-18T15:58:57.447357+00:00",
+  "approved_by": "repository maintainer (interactive session)",
+  "approval_basis": "Explicit approval to deploy in the isolated safe staging environment and complete a full run.",
+  "risk_context": {
+    "critical_findings": 1,
+    "high_findings": 327,
+    "enforcement": "report_only",
+    "scope": "staging_only"
+  },
+  "subject": {
+    "repository": "joku-dev/ha-CPsWMS",
+    "commit": "5d5772d989b0080ae041969315742c8fbbca6dfe",
+    "evidence_run_id": "35351493542"
+  },
+  "target": {
+    "hostname": "ha-cpswms-stg-01",
+    "address": "192.168.200.197",
+    "environment": "staging"
+  },
+  "components": {
+    "query-api": {
+      "runtime_image_id": "sha256:38a455cb09b377029735fc8b8cde23c42a19f1a9553f47366b6ab34c314112d6"
+    },
+    "neo4j": {
+      "runtime_image_id": "sha256:01c6297838d378b6a3499ec259f36333b4b9dc63868eba1099ae512069c116ea"
+    }
+  }
+}

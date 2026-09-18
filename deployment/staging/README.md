@@ -3,7 +3,12 @@
 Vom Maintainer am 16. September 2026 ausgewählt. Vorgesehener erster Umfang:
 `query-api` und Neo4j, getrennt von Produktion, Home Assistant und LLM-Diensten.
 Der vorbereitete Zielhost ist die Proxmox-VM `ha-cpswms-stg-01`
-(`192.168.200.197`). Diese Konfiguration ist **noch nicht deployt**.
+(`192.168.200.197`). Der erste reale Staging-Lauf wurde am **18. September 2026** erfolgreich
+ausgeführt. Der deployte Softwarestand ist Commit
+`5d5772d989b0080ae041969315742c8fbbca6dfe` aus dem L1-Lauf
+`35351493542`. Beide Container sind aktiv und healthy; 19 von 19 Start-,
+Funktions-, Persistenz-, Wiederanlauf- und Laufzeithärtungsprüfungen wurden
+bestanden.
 
 ## Bereitstellungsprofil für die neue VM
 
@@ -29,7 +34,10 @@ werden mit dem ersten Deployment-Nachweis festgelegt.
 - Keine bestehenden produktiven Neo4j-Volumes oder Home-Assistant-Zugangsdaten.
 
 Die API bindet nur `127.0.0.1:18080`. Zugriff erfolgt zunächst über SSH-Tunnel.
-Neo4j hat keinen veröffentlichten Host-Port. Das Docker-Netzwerk ist intern;
+Neo4j hat keinen veröffentlichten Host-Port. Das Backend-Netzwerk ist intern;
+die Query API hängt zusätzlich an einem separaten Bridge-Netz, damit Docker die
+Loopback-Portbindung tatsächlich herstellen kann. Ohne dieses zweite Netz ist
+eine Host-Portbindung bei `internal: true` nicht erreichbar;
 Graphdaten und Datenbanklogs erhalten eigene Compose-Volumes. Das Projekt muss
 stets `ha-cpswms-staging` heißen. Der Ablauf darf keine anderen Container stoppen.
 
@@ -90,3 +98,38 @@ unbekannte Hosts oder eine erfundene Freigabe.
 
 Die Compose-Datei allein erfüllt diese Kontrollen nicht. Erst der reale Lauf mit
 seinen Nachweisen kann die offenen Kontrollbestandteile schließen.
+
+
+## Ausgeführter Staging-Lauf vom 18. September 2026
+
+Der versionierte Nachweis liegt unter
+`deployment/staging/evidence/2026-09-18T16-05-03Z-run-35351493542/`.
+Er enthält Freigabe, Deployment-Receipt, Prüfliste, HTTP-Antworten, Containerlogs
+und relative SHA-256-Prüfsummen. Das Receipt bindet den Lauf an die exakten
+Runtime-Image-IDs, den Source-Commit, den CI-Lauf und den Zielhost.
+
+Geprüft wurden:
+
+- beide Container-Healthchecks und die Neo4j-Verbindung,
+- die fachlichen Endpunkte `capabilities`, `simulation-readiness` und eine
+  What-if-Abfrage,
+- Persistenz über einen Neo4j-Neustart mit anschließend gelöschtem Prüfdatensatz,
+- Erkennung eines kontrollierten Datenbankausfalls und Wiederherstellung,
+- Neustart und erneuter Healthcheck der Query API,
+- exakte Runtime-Image-IDs, Non-root-/Read-only-/Capability-Grenzen,
+- ausschließliche Loopback-Bindung der API und fehlende Neo4j-Portfreigabe.
+
+Der Ausfall wird korrekt erkannt, `/health` antwortet dabei aktuell mit HTTP 500
+statt 503. Das ist als `STG-OBS-001` dokumentiert und verhindert den
+Staging-Betrieb nicht. Die vorhandenen Schwachstellen bleiben report-only und
+sind durch diese Deployment-Freigabe nicht behoben oder allgemein akzeptiert.
+
+Zugriff vom Admin-Rechner:
+
+```bash
+ssh -L 18080:127.0.0.1:18080 deploy@192.168.200.197
+curl http://127.0.0.1:18080/health
+```
+
+Die Freigabe gilt ausschließlich für diese Staging-Umgebung und den im Receipt
+genannten Softwarestand.
