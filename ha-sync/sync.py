@@ -5,15 +5,21 @@ und speichert sie in einer Neo4j-Datenbank. Dabei werden Knoten für
 Entity, Room, DeviceClass und Unit angelegt und Beziehungen erstellt.
 """
 
+import json
 import os
 import re
 import sys
-import json
 import time
-import yaml
+from pathlib import Path
+
 import requests
 import websocket
-from pathlib import Path
+import yaml
+from neo4j.exceptions import Neo4jError
+from requests.exceptions import RequestException
+from websocket import WebSocketException
+from yaml import YAMLError
+
 from neo4j import GraphDatabase
 
 # Expose repository root so local packages can be imported when running from ha-sync
@@ -23,12 +29,11 @@ sys.path.insert(0, str(ROOT_DIR))
 from semantic_core.identity.canonical_registry import CanonicalRegistry
 from semantic_core.identity.confidence_model import ConfidenceModel
 from semantic_core.identity.identity_resolver import IdentityResolver
+from semantic_core.identity.models import SourceSystem
 from semantic_core.identity.resolution_pipeline import ResolutionPipeline
-from semantic_core.identity.models import RawEntity as SemanticRawEntity, SourceSystem
 from sources.homeassistant.adapter import HomeAssistantAdapter
 from storage.neo4j.repository import Neo4jRepository
 from storage.neo4j.writer import SemanticCoreWriter
-
 
 HA_URL = os.environ["HA_URL"].rstrip("/")
 HA_TOKEN = os.environ["HA_TOKEN"]
@@ -83,7 +88,7 @@ def get_ha_logbook():
         )
         response.raise_for_status()
         return response.json()
-    except Exception as exc:
+    except (RequestException, ValueError) as exc:
         print(f"Could not read logbook: {exc}")
         return []
 
@@ -97,7 +102,7 @@ def get_ha_events():
         )
         response.raise_for_status()
         return response.json()
-    except Exception as exc:
+    except (RequestException, ValueError) as exc:
         print(f"Could not read event types: {exc}")
         return []
 
@@ -138,7 +143,7 @@ def ha_ws_command(command_type):
 def safe_ws(command_type, label):
     try:
         return ha_ws_command(command_type)
-    except Exception as exc:
+    except (WebSocketException, json.JSONDecodeError, OSError, RuntimeError) as exc:
         print(f"Could not read {label}: {exc}")
         return []
 
@@ -152,7 +157,7 @@ def get_ha_config_entries_rest():
         )
         response.raise_for_status()
         return response.json()
-    except Exception as exc:
+    except (RequestException, ValueError) as exc:
         print(f"Could not read config entries via REST: {exc}")
         return []
 
@@ -247,7 +252,7 @@ def load_yaml_file(path):
 
         return data
 
-    except Exception as exc:
+    except (OSError, TypeError, YAMLError) as exc:
         print(f"Could not parse YAML file {path}: {exc}")
         return []
 
@@ -792,7 +797,7 @@ def wait_for_neo4j(driver, retries=30, delay=5):
                 session.run("RETURN 1")
             print("Neo4j connection established")
             return
-        except Exception as exc:
+        except (Neo4jError, OSError) as exc:
             print(f"Waiting for Neo4j... attempt {attempt}/{retries}: {exc}")
             time.sleep(delay)
 
@@ -813,7 +818,9 @@ def main():
     while True:
         try:
             run_sync(driver)
-        except Exception as exc:
+        # This is the long-running worker boundary. One malformed external
+        # record must not terminate later sync cycles.
+        except Exception as exc:  # noqa: BLE001
             print(f"Sync failed: {exc}")
 
         time.sleep(SYNC_INTERVAL_SECONDS)

@@ -5,7 +5,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 BASE_DIR = Path(__file__).parent
@@ -19,7 +18,9 @@ NEO4J_URI = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
 NEO4J_PASSWORD = os.environ["NEO4J_PASSWORD"]
 
-WORLD_MODEL_CHAT_HOST = os.getenv("WORLD_MODEL_CHAT_HOST", "0.0.0.0")
+# Binding inside the container is intentional; deployment controls decide which
+# host interfaces, if any, publish the service.
+WORLD_MODEL_CHAT_HOST = os.getenv("WORLD_MODEL_CHAT_HOST", "0.0.0.0")  # nosec B104
 WORLD_MODEL_CHAT_PORT = int(os.getenv("WORLD_MODEL_CHAT_PORT", "8090"))
 
 MAX_QUERY_ROWS = int(os.getenv("WORLD_MODEL_CHAT_MAX_QUERY_ROWS", "100"))

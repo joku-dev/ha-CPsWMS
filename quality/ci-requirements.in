@@ -1,0 +1,3 @@
+# One compatible, hashed environment for source tests and evidence tooling.
+-r tool-requirements.txt
+-r application-requirements.in

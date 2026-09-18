@@ -1,5 +1,7 @@
 """Causal dependency enrichment using capabilities and temporal context."""
 
+from typing import ClassVar
+
 from enrichers.base import BaseEnricher
 
 
@@ -11,7 +13,7 @@ class CausalDependencyEnricher(BaseEnricher):
     schema_file = "causal_dependency_schema.json"
     response_key = "causal_links"
 
-    relationship_types = {
+    relationship_types: ClassVar[set[str]] = {
         "CAUSES",
         "DEPENDS_ON",
         "IMPACTS",
@@ -19,7 +21,7 @@ class CausalDependencyEnricher(BaseEnricher):
         "RECOVERS",
     }
 
-    node_matchers = {
+    node_matchers: ClassVar[dict[str, str]] = {
         "automation": "MATCH ({var}:Automation {{automation_id: ${param}}})",
         "capability": "MERGE ({var}:Capability {{name: ${param}}})",
         "incident": "MATCH ({var}:Incident {{incident_id: ${param}}})",

@@ -5,13 +5,16 @@ import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
-from neo4j import GraphDatabase
+from neo4j.exceptions import Neo4jError
 
+from neo4j import GraphDatabase
 
 NEO4J_URI = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
 NEO4J_PASSWORD = os.environ["NEO4J_PASSWORD"]
-QUERY_API_HOST = os.getenv("QUERY_API_HOST", "0.0.0.0")
+# The service listens on the container interface; staging publishes it only on
+# host loopback and verifies that boundary independently.
+QUERY_API_HOST = os.getenv("QUERY_API_HOST", "0.0.0.0")  # nosec B104
 QUERY_API_PORT = int(os.getenv("QUERY_API_PORT", "8080"))
 DEFAULT_LIMIT = int(os.getenv("QUERY_API_DEFAULT_LIMIT", "25"))
 MAX_LIMIT = int(os.getenv("QUERY_API_MAX_LIMIT", "100"))
@@ -351,7 +354,7 @@ class QueryHandler(BaseHTTPRequestHandler):
                 status=404,
             )
 
-        except Exception as exc:
+        except (Neo4jError, KeyError, TypeError, ValueError) as exc:
             self.send_json({"error": "query_failed", "detail": str(exc)}, status=500)
 
     def send_json(self, payload, status=200):

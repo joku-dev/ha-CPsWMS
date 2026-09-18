@@ -1,7 +1,5 @@
 """Canonical entity registry for managing stable identities."""
 
-from typing import Dict, List, Optional
-from uuid import uuid4
 
 from .models import CanonicalEntity, RawEntity
 
@@ -10,18 +8,18 @@ class CanonicalRegistry:
     """Manages canonical entities and their aliases."""
 
     def __init__(self):
-        self.entities: Dict[str, CanonicalEntity] = {}
-        self.aliases: Dict[str, str] = {}  # alias -> canonical_id
+        self.entities: dict[str, CanonicalEntity] = {}
+        self.aliases: dict[str, str] = {}  # alias -> canonical_id
 
     def register_entity(self, entity: CanonicalEntity) -> None:
         """Register a new canonical entity."""
         self.entities[entity.canonical_id] = entity
 
-    def get_entity(self, canonical_id: str) -> Optional[CanonicalEntity]:
+    def get_entity(self, canonical_id: str) -> CanonicalEntity | None:
         """Retrieve a canonical entity by ID."""
         return self.entities.get(canonical_id)
 
-    def find_candidates(self, raw_entity: RawEntity) -> List[CanonicalEntity]:
+    def find_candidates(self, raw_entity: RawEntity) -> list[CanonicalEntity]:
         """Find candidate canonical entities for a raw entity."""
         # Simple implementation: return all entities of same type
         candidates = []
@@ -55,7 +53,7 @@ class CanonicalRegistry:
         """Add an alias for a canonical entity."""
         self.aliases[alias] = canonical_id
 
-    def resolve_alias(self, alias: str) -> Optional[str]:
+    def resolve_alias(self, alias: str) -> str | None:
         """Resolve an alias to a canonical ID."""
         return self.aliases.get(alias)
 

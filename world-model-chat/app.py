@@ -4,12 +4,7 @@ import json
 import re
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
-from neo4j import GraphDatabase
-from openai import OpenAI
-from pydantic import BaseModel, Field
 import uvicorn
-
 from config import (
     MAX_QUERY_ROWS,
     MIN_CYPHER_CONFIDENCE,
@@ -23,7 +18,11 @@ from config import (
     WORLD_MODEL_CHAT_HOST,
     WORLD_MODEL_CHAT_PORT,
 )
+from fastapi import FastAPI, HTTPException
+from openai import OpenAI
+from pydantic import BaseModel, Field
 
+from neo4j import GraphDatabase
 
 app = FastAPI(
     title="Home Assistant World Model Chat",

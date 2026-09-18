@@ -15,10 +15,36 @@ from report import (
     build_report,
     execution_ok,
     inspect_image,
+    inspect_main_ruleset,
     junit,
     typed_evidence_manifest,
     verify_bundle,
 )
+
+
+def test_main_ruleset_requires_controls_and_no_bypass(tmp_path):
+    write(tmp_path / 'rulesets.json', {'http_status': 200, 'data': [{'id': 42}]})
+    ruleset = {
+        'id': 42,
+        'name': 'main protection',
+        'enforcement': 'active',
+        'bypass_actors': [],
+        'conditions': {'ref_name': {'include': ['refs/heads/main'], 'exclude': []}},
+        'rules': [
+            {'type': 'deletion'},
+            {'type': 'non_fast_forward'},
+            {'type': 'pull_request', 'parameters': {'required_approving_review_count': 0}},
+            {'type': 'required_status_checks', 'parameters': {'required_status_checks': [
+                {'context': name} for name in (
+                    'validate-ubuntu', 'validate-debian', 'DevSecOps Governance',
+                    'Architecture Runtime Governance', 'L1 coverage report')]}},
+        ],
+    }
+    write(tmp_path / 'ruleset-details.json', [{'http_status': 200, 'data': ruleset}])
+    assert inspect_main_ruleset(tmp_path)['id'] == 42
+    ruleset['bypass_actors'] = [{'actor_type': 'RepositoryRole', 'actor_id': 5}]
+    write(tmp_path / 'ruleset-details.json', [{'http_status': 200, 'data': ruleset}])
+    assert inspect_main_ruleset(tmp_path) is None
 
 
 def test_changed_raw_bytes_are_rejected(tmp_path):

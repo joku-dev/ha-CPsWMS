@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional
 
 
 @dataclass
@@ -12,7 +11,7 @@ class SourceSystem:
     source_type: str
     name: str
     trust_level: float
-    metadata: Dict[str, any] = field(default_factory=dict)
+    metadata: dict[str, any] = field(default_factory=dict)
 
 
 @dataclass
@@ -20,10 +19,10 @@ class Observation:
     """Represents a concrete measurement or detection at a point in time."""
     observation_id: str
     source_id: str
-    timestamp: Optional[datetime] = None
+    timestamp: datetime | None = None
     observation_type: str = ""
-    raw_payload: Dict[str, any] = field(default_factory=dict)
-    attributes: Dict[str, any] = field(default_factory=dict)
+    raw_payload: dict[str, any] = field(default_factory=dict)
+    attributes: dict[str, any] = field(default_factory=dict)
 
 
 @dataclass
@@ -32,12 +31,12 @@ class RawEntity:
     raw_entity_id: str
     source_id: str
     source_entity_id: str
-    entity_type: Optional[str] = None
-    name: Optional[str] = None
-    domain: Optional[str] = None
-    device_class: Optional[str] = None
-    area: Optional[str] = None
-    attributes: Dict[str, any] = field(default_factory=dict)
+    entity_type: str | None = None
+    name: str | None = None
+    domain: str | None = None
+    device_class: str | None = None
+    area: str | None = None
+    attributes: dict[str, any] = field(default_factory=dict)
 
 
 @dataclass
@@ -45,12 +44,12 @@ class CanonicalEntity:
     """Represents a stable semantic identity in the world model."""
     canonical_id: str
     entity_type: str
-    canonical_name: Optional[str] = None
+    canonical_name: str | None = None
     lifecycle_state: str = "active"
     confidence_status: str = "unknown"
-    attributes: Dict[str, any] = field(default_factory=dict)
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    attributes: dict[str, any] = field(default_factory=dict)
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 @dataclass
@@ -60,8 +59,8 @@ class Evidence:
     evidence_type: str
     description: str
     score: float
-    source: Optional[str] = None
-    details: Dict[str, any] = field(default_factory=dict)
+    source: str | None = None
+    details: dict[str, any] = field(default_factory=dict)
 
 
 @dataclass
@@ -72,7 +71,7 @@ class ResolutionDecision:
     decision_type: str  # 'resolved_existing', 'created_new', 'candidate_review', 'rejected'
     method: str
     overall_confidence: float
-    canonical_id: Optional[str] = None
-    evidence: List[Evidence] = field(default_factory=list)
+    canonical_id: str | None = None
+    evidence: list[Evidence] = field(default_factory=list)
     review_required: bool = False
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None

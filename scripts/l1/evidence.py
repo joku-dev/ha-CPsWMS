@@ -6,6 +6,8 @@ import argparse
 import hashlib
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -18,6 +20,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SERVICES = ('ha-sync', 'semantic-enrichment', 'query-api', 'world-model-chat', 'neo4j')
 CODE = ('ha-sync', 'semantic-enrichment', 'query-api', 'world-model-chat', 'semantic_core', 'sources', 'storage')
+LOCKS = {
+    'ha-sync': ('ha-sync/requirements.txt', 'ha-sync/requirements.lock'),
+    'query-api': ('query-api/requirements.txt', 'query-api/requirements.lock'),
+    'semantic-enrichment': ('semantic-enrichment/requirements.txt', 'semantic-enrichment/requirements.lock'),
+    'world-model-chat': ('world-model-chat/requirements.txt', 'world-model-chat/requirements.lock'),
+    'application': ('quality/application-requirements.in', 'quality/application-requirements.lock'),
+    'ci': ('quality/ci-requirements.in', 'quality/ci-requirements.lock'),
+}
 
 
 def write(path, value):
@@ -73,6 +83,84 @@ def execute(out, name, command, accepted=(0,)):
     return record['execution_ok']
 
 
+def locked_packages(path):
+    """Return exact pins and reject lock entries without an artifact hash."""
+    text = Path(path).read_text()
+    packages = {}
+    matches = list(re.finditer(
+        r'(?m)^([A-Za-z0-9_.-]+)==([^\s\\]+)(.*?)(?=^[A-Za-z0-9_.-]+==|\Z)',
+        text, re.DOTALL))
+    for match in matches:
+        name, version, block = match.groups()
+        if '--hash=sha256:' not in block:
+            raise ValueError(f'Unhashed lock entry: {name}')
+        packages[name.lower().replace('_', '-')] = version
+    if not packages:
+        raise ValueError('Lock has no exact package pins')
+    return packages
+
+
+def dependency_inventory(out):
+    """Record locked inputs and generate application plus CI/tool inventories."""
+    records, parsed = {}, {}
+    try:
+        for name, (input_name, lock_name) in LOCKS.items():
+            input_path, lock_path = ROOT / input_name, ROOT / lock_name
+            parsed[name] = locked_packages(lock_path)
+            evidence_input = out / 'dependency-files' / (name + '.in')
+            evidence_lock = out / 'dependency-files' / (name + '.lock')
+            evidence_input.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(input_path, evidence_input)
+            shutil.copyfile(lock_path, evidence_lock)
+            records[name] = {
+                'input': input_name,
+                'input_sha256': sha(input_path),
+                'lock': lock_name,
+                'lock_sha256': sha(lock_path),
+                'package_count': len(parsed[name]),
+                'hashes_required': True,
+                'evidence_input': str(evidence_input.relative_to(out)),
+                'evidence_lock': str(evidence_lock.relative_to(out)),
+            }
+        for service in SERVICES[:4]:
+            if not set(parsed[service].items()).issubset(set(parsed['application'].items())):
+                raise ValueError(f'Application lock does not contain {service} lock')
+        if not set(parsed['application'].items()).issubset(set(parsed['ci'].items())):
+            raise ValueError('CI lock does not contain the application lock')
+        write(out / 'dependency-locks.json', {
+            'python': '3.12',
+            'resolver': 'uv 0.8.22',
+            'locks': records,
+        })
+    except (OSError, ValueError):
+        return False
+
+    checks = []
+    for profile in ('application', 'ci'):
+        checks.append(execute(out, 'dependency-sbom-' + profile, [
+            'cyclonedx-py', 'requirements', '--output-reproducible',
+            '--output-format', 'JSON', '--output-file',
+            str(out / ('dependency-sbom-' + profile + '.cyclonedx.json')),
+            str(ROOT / LOCKS[profile][1]),
+        ]))
+    checks.append(execute(out, 'dependency-audit', [
+        sys.executable, '-m', 'pip_audit', '--require-hashes', '--disable-pip',
+        '--progress-spinner', 'off', '--format', 'json', '--output',
+        str(out / 'dependency-audit.json'), '-r', str(ROOT / LOCKS['application'][1]),
+    ], accepted=(0, 1)))
+    try:
+        for profile in ('application', 'ci'):
+            sbom = json.loads((out / ('dependency-sbom-' + profile + '.cyclonedx.json')).read_text())
+            if sbom.get('bomFormat') != 'CycloneDX' or len(sbom.get('components', [])) < len(parsed[profile]):
+                raise ValueError('Incomplete dependency SBOM')
+        audit = json.loads((out / 'dependency-audit.json').read_text())
+        if not isinstance(audit.get('dependencies'), list):
+            raise TypeError('Invalid dependency audit')
+    except (OSError, ValueError, TypeError):
+        checks.append(False)
+    return all(checks)
+
+
 def seal(out):
     """Bind raw output bytes to the producer run; this is integrity, not attestation."""
     files = {str(p.relative_to(out)): {'sha256': sha(p), 'bytes': p.stat().st_size}
@@ -92,6 +180,7 @@ def source(out):
     checks.append(execute(out, 'ruff', [sys.executable, '-m', 'ruff', 'check', *CODE,
         '--output-format', 'json', '--output-file', str(out / 'ruff.json')], accepted=(0, 1)))
     checks.append(execute(out, 'installed-tools', [sys.executable, '-m', 'pip', 'freeze']))
+    checks.append(dependency_inventory(out))
     # A tools exit 1 is a finding only when its structured result actually exists.
     for name in ('bandit', 'ruff'):
         try:
@@ -167,21 +256,30 @@ def api_request(endpoint):
 
 def platform(out):
     commit = context()['commit']
+    ruleset_details = []
     for name, endpoint in {
         'commit': 'commits/' + commit,
         'branch': 'branches/main',
         'protection': 'branches/main/protection',
         'rules': 'rules/branches/main',
+        'rulesets': 'rulesets?includes_parents=true&per_page=100',
         'run': 'actions/runs/' + context()['run_id'],
         'pulls': 'commits/' + commit + '/pulls?per_page=100',
         'environments': 'environments?per_page=100',
     }.items():
         result = api_request(endpoint)
         write(out / (name + '.json'), result)
+        if name == 'rulesets' and result['http_status'] == 200:
+            for ruleset in result['data']:
+                ruleset_id = ruleset.get('id')
+                if isinstance(ruleset_id, int):
+                    ruleset_details.append(api_request(
+                        'rulesets/' + str(ruleset_id) + '?includes_parents=true'))
         if name == 'pulls' and result['http_status'] == 200:
             for pull in result['data']:
                 write(out / ('reviews-' + str(pull['number']) + '.json'),
                       api_request('pulls/' + str(pull['number']) + '/reviews?per_page=100'))
+    write(out / 'ruleset-details.json', ruleset_details)
     seal(out)
     return True  # Missing API permissions are explicit report gaps, not fake PASS.
 

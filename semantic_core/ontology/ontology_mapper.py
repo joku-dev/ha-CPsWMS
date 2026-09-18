@@ -1,8 +1,8 @@
 """Ontology mapper that maps raw entities into canonical semantic categories."""
 
-from typing import Optional
 
 from semantic_core.identity.models import RawEntity
+
 from .ontology_store import OntologyStore
 
 
@@ -12,7 +12,7 @@ class OntologyMapper:
     def __init__(self, ontology_store: OntologyStore):
         self.ontology_store = ontology_store
 
-    def map_entity_type(self, raw_entity: RawEntity) -> Optional[str]:
+    def map_entity_type(self, raw_entity: RawEntity) -> str | None:
         """Map a raw entity type to an ontology concept."""
         entity_type = raw_entity.entity_type or raw_entity.domain
         if not entity_type:
@@ -21,7 +21,7 @@ class OntologyMapper:
         candidate = f"concept.{entity_type}"
         return candidate if self.ontology_store.get_concept(candidate) else None
 
-    def map_entity_area(self, raw_entity: RawEntity) -> Optional[str]:
+    def map_entity_area(self, raw_entity: RawEntity) -> str | None:
         """Map a raw entity area to an ontology location concept."""
         if not raw_entity.area:
             return None

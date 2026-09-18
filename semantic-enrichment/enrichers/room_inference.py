@@ -13,7 +13,6 @@ class RoomInferenceEnricher(BaseEnricher):
 
     def create_constraints(self):
         """No additional constraints required for inferred area links."""
-        pass
 
     def get_candidates(self, limit):
         """Select entities without explicit room assignment."""

@@ -1,6 +1,5 @@
 """Confidence scoring model for entity resolution."""
 
-from typing import Dict, List, Tuple
 
 from .models import CanonicalEntity, Evidence, RawEntity
 
@@ -24,7 +23,7 @@ class ConfidenceModel:
         raw_entity: RawEntity,
         candidate: CanonicalEntity,
         source_trust: float = 0.8
-    ) -> Tuple[float, List[Evidence]]:
+    ) -> tuple[float, list[Evidence]]:
         """
         Calculate overall confidence score and evidence.
 
@@ -90,7 +89,8 @@ class ConfidenceModel:
             return 0.0
 
         # Remove generic canonical prefix
-        canonical_tokens = [token for token in canonical_tokens if token != "canonical"]
+        # Domain vocabulary, not a credential.
+        canonical_tokens = [token for token in canonical_tokens if token != "canonical"]  # nosec B105
 
         if not canonical_tokens:
             return 0.0

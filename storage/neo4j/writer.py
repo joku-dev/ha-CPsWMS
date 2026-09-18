@@ -1,7 +1,13 @@
 """Neo4j writer for semantic core models."""
 
+from semantic_core.identity.models import (
+    CanonicalEntity,
+    RawEntity,
+    ResolutionDecision,
+    SourceSystem,
+)
+
 from .repository import Neo4jRepository
-from semantic_core.identity.models import CanonicalEntity, RawEntity, ResolutionDecision, SourceSystem
 
 
 class SemanticCoreWriter:

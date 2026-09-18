@@ -1,10 +1,9 @@
 """Normalization utilities for entity names and attributes."""
 
 import re
-from typing import List
 
 
-def normalize_entity_name(entity_name: str) -> List[str]:
+def normalize_entity_name(entity_name: str) -> list[str]:
     """
     Normalize an entity name into semantic tokens.
 

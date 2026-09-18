@@ -1,12 +1,14 @@
 """Resolve enrichment targets based on canonical and legacy entity graphs."""
 
+from typing import ClassVar
+
 from config import ENRICHMENT_TARGET_MODE
 
 
 class EnrichmentTargetResolver:
     """Decides whether semantic writes should target CanonicalEntity or Entity."""
 
-    VALID_MODES = {"canonical_first", "entity_first", "dual_write"}
+    VALID_MODES: ClassVar[set[str]] = {"canonical_first", "entity_first", "dual_write"}
 
     def __init__(self, mode: str | None = None):
         self.mode = (mode or ENRICHMENT_TARGET_MODE).lower()

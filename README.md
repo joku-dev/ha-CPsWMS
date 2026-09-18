@@ -37,7 +37,9 @@ Ontologie-, Zeit- und Kausalmodellierung.
 ## Gemessene L1-Nachweise
 
 Der Workflow **L1 Measured Evidence** ergänzt echte Anwendungstests, isolierte
-HTTP-/Neo4j-Integration, Container-Builds, CycloneDX-SBOMs und Trivy-Scans.
+HTTP-/Neo4j-Integration, Container-Builds, CycloneDX-SBOMs, Trivy-Scans,
+Anwendungs-/Tool-SBOMs und `pip-audit`. Python-Abhängigkeiten werden in CI und
+Docker ausschließlich aus Python-3.12-Locks mit SHA-256-Hashes installiert.
 Die [Abdeckungsmatrix aller 16 L1-Kontrollen](docs/quality/L1_MEASURED_EVIDENCE.md)
 trennt gemessene Nachweise, Findings und offene Freigabe-/Betriebsanforderungen.
 

@@ -14,8 +14,8 @@ WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1
 
-COPY ha-sync/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY ha-sync/requirements.lock .
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 
 COPY ha-sync ./ha-sync
 COPY semantic_core ./semantic_core
