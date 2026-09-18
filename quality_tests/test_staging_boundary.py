@@ -1,4 +1,4 @@
-"""Keep the prepared staging deployment isolated until a real host is selected."""
+"""Keep the prepared staging deployment isolated and least-privileged."""
 from pathlib import Path
 
 import yaml
@@ -17,4 +17,13 @@ def test_staging_exposes_only_loopback_api_and_pins_runtime_selection():
         assert service['image'].startswith('${') and ':?' in service['image']
         assert service['networks'] == ['staging']
         assert 'privileged' not in service and 'network_mode' not in service
+        assert service['security_opt'] == ['no-new-privileges:true']
+        assert service['pids_limit'] > 0
+    query = config['services']['query-api']
+    assert query['user'] == '65532:65532'
+    assert query['read_only'] is True
+    assert query['cap_drop'] == ['ALL']
+    assert query['tmpfs'] == ['/tmp:rw,noexec,nosuid,nodev,size=64m']
+    assert query['environment']['PYTHONDONTWRITEBYTECODE'] == '1'
+    assert query['healthcheck']['test'][:3] == ['CMD', 'python', '-c']
     assert all('external' not in value for value in config['volumes'].values() if value)

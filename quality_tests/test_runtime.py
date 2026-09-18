@@ -58,6 +58,7 @@ def runtime():
     started = time.time()
     try:
         docker('run', '--pull=never', '-d', '--name', db, '--network', tag, '--network-alias', 'graph',
+               '--security-opt', 'no-new-privileges:true', '--pids-limit', '512',
                '-p', '127.0.0.1::7687', '-e', 'NEO4J_AUTH=neo4j/' + password, neo4j_image)
         port = docker('port', db, '7687/tcp').split(':')[-1]
         driver = GraphDatabase.driver('bolt://127.0.0.1:' + port, auth=('neo4j', password), connection_timeout=3)
@@ -74,8 +75,10 @@ def runtime():
             session.run("CREATE (i:Integration {domain:'test_zigbee'}), (e:Entity {entity_id:'sensor.l1', friendly_name:'L1 Sensor', state:'on'}), (c:Capability {name:'l1_temperature'}), (raw:RawEntity {raw_entity_id:'l1-raw'}), (canonical:CanonicalEntity {canonical_id:'l1-canonical'}), (e)-[:PROVIDED_BY]->(i), (e)-[:PROVIDES_CAPABILITY {confidence:0.95}]->(c), (e)-[:HAS_RAW_REPRESENTATION]->(raw), (raw)-[:RESOLVED_TO]->(canonical)").consume()
             assert session.run('MATCH (n) RETURN count(n) AS count').single()['count'] == 5
         docker('run', '--pull=never', '-d', '--name', api, '--network', tag, '-p', '127.0.0.1::8080',
+               '--user', '65532:65532', '--read-only', '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=64m',
+               '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges:true', '--pids-limit', '128',
                '-e', 'NEO4J_URI=bolt://graph:7687', '-e', 'NEO4J_USER=neo4j',
-               '-e', 'NEO4J_PASSWORD=' + password, manifest['image_id'])
+               '-e', 'NEO4J_PASSWORD=' + password, '-e', 'PYTHONDONTWRITEBYTECODE=1', manifest['image_id'])
         api_port = docker('port', api, '8080/tcp').split(':')[-1]
         base = 'http://127.0.0.1:' + api_port
         for _ in range(40):
