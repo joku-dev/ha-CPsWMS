@@ -30,6 +30,14 @@ Neo4j hat keinen veröffentlichten Host-Port. Das Docker-Netzwerk ist intern;
 Graphdaten und Datenbanklogs erhalten eigene Compose-Volumes. Das Projekt muss
 stets `ha-cpswms-staging` heißen. Der Ablauf darf keine anderen Container stoppen.
 
+Die Query API läuft zusätzlich mit einer numerischen Nicht-Root-Identität, einem
+Read-only-Root-Dateisystem, ohne Linux-Capabilities und mit
+`no-new-privileges`. Neo4j und Query API besitzen PID-Grenzen; auch Neo4j erhält
+`no-new-privileges`. `docker compose up --wait` wartet auf einen echten
+Query-API-Healthcheck, der zugleich die Verbindung zur Datenbank prüft. Diese
+Laufzeitgrenzen reduzieren die Ausnutzbarkeit verbleibender Paketbefunde, ersetzen
+aber weder deren Bewertung noch eine dokumentierte Staging-Freigabe.
+
 ## Vor einem Deployment
 
 1. Einen erfolgreichen **push/main**-Lauf von `L1 Measured Evidence` auswählen.
