@@ -2,19 +2,24 @@
   "evidence_type": "operation_evidence",
   "status": "approved",
   "owner": "Operations Owner",
-  "approved_by": "Architecture Demo Review",
-  "approval_date": "2026-07-02",
-  "summary": "Demo operation evidence based on deployment health-check guidance, Docker Compose runtime visibility and benchmark reports.",
+  "approved_by": "Repository maintainer for isolated staging",
+  "approval_date": "2026-09-18",
+  "summary": "Real staging deployment evidence for query-api and Neo4j, including approved image identity, health, functional, persistence, outage/recovery and runtime-hardening checks.",
   "evidence_refs": [
-    "docs/DEPLOYMENT.md",
-    "docker-compose.yml",
-    "benchmark/reports/performance_evolution_summary.md"
+    "deployment/staging/README.md",
+    "deployment/staging/compose.yml",
+    "deployment/staging/evidence/2026-09-18T16-05-03Z-run-35351493542/deployment-receipt.json",
+    "deployment/staging/evidence/2026-09-18T16-05-03Z-run-35351493542/SHA256SUMS"
   ],
   "known_limitations": [
-    "No live monitoring dashboard export is currently committed."
+    "The approval and deployment apply to isolated staging only, not production.",
+    "Existing vulnerability findings remain report-only and unresolved.",
+    "The health endpoint reports dependency outage as HTTP 500 instead of 503.",
+    "No load, failover, backup-restore, long-duration soak or live monitoring dashboard evidence is included."
   ],
   "follow_up_actions": [
-    "Add dashboard or metrics evidence.",
-    "Add operational health indicators for query-api and world-model-chat."
+    "Return HTTP 503 from the health endpoint when Neo4j is unavailable.",
+    "Add backup-restore, load and long-duration monitoring evidence before production use.",
+    "Continue vulnerability remediation and reassess the deployed images."
   ]
 }
