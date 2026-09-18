@@ -15,7 +15,7 @@ from pathlib import Path
 import requests
 import websocket
 import yaml
-from neo4j.exceptions import Neo4jError
+from neo4j.exceptions import DriverError, Neo4jError
 from requests.exceptions import RequestException
 from websocket import WebSocketException
 from yaml import YAMLError
@@ -797,7 +797,7 @@ def wait_for_neo4j(driver, retries=30, delay=5):
                 session.run("RETURN 1")
             print("Neo4j connection established")
             return
-        except (Neo4jError, OSError) as exc:
+        except (DriverError, Neo4jError, OSError) as exc:
             print(f"Waiting for Neo4j... attempt {attempt}/{retries}: {exc}")
             time.sleep(delay)
 

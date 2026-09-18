@@ -18,7 +18,7 @@ from enrichers.semantic_descriptions import SemanticDescriptionsEnricher
 from enrichers.semantic_roles import SemanticRolesEnricher
 from enrichers.simulation_readiness import SimulationReadinessEnricher
 from enrichers.temporal_event_model import TemporalEventModelEnricher
-from neo4j.exceptions import Neo4jError
+from neo4j.exceptions import DriverError, Neo4jError
 
 
 def wait_for_neo4j(enricher, retries=30, delay=5):
@@ -29,7 +29,7 @@ def wait_for_neo4j(enricher, retries=30, delay=5):
                 session.run("RETURN 1")
             print("Neo4j connection established.")
             return
-        except (Neo4jError, OSError) as exc:
+        except (DriverError, Neo4jError, OSError) as exc:
             print(f"Waiting for Neo4j... attempt {attempt}/{retries}: {exc}")
             time.sleep(delay)
 

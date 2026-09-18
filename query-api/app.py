@@ -5,7 +5,7 @@ import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
-from neo4j.exceptions import Neo4jError
+from neo4j.exceptions import DriverError, Neo4jError
 
 from neo4j import GraphDatabase
 
@@ -354,7 +354,7 @@ class QueryHandler(BaseHTTPRequestHandler):
                 status=404,
             )
 
-        except (Neo4jError, KeyError, TypeError, ValueError) as exc:
+        except (DriverError, Neo4jError, KeyError, TypeError, ValueError) as exc:
             self.send_json({"error": "query_failed", "detail": str(exc)}, status=500)
 
     def send_json(self, payload, status=200):

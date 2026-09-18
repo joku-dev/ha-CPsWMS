@@ -16,6 +16,7 @@ from config import (
 )
 from enrichment_target_resolver import EnrichmentTargetResolver
 from neo4j.exceptions import (
+    DriverError,
     Neo4jError,
     ServiceUnavailable,
     SessionExpired,
@@ -55,7 +56,7 @@ class BaseEnricher(ABC):
         """Reset the Neo4j driver after connection-pool failures."""
         try:
             self.driver.close()
-        except (Neo4jError, OSError) as exc:
+        except (DriverError, Neo4jError, OSError) as exc:
             print(f"[{self.name}] Closing stale Neo4j driver failed: {exc}")
         self.driver = GraphDatabase.driver(
             NEO4J_URI,
