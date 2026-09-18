@@ -141,4 +141,6 @@ run context, then writes separate `vulnerability_scan` and `sbom` Trust records
 and opens an operational intake PR. The central viewer updates after that PR merges.
 Trust is report-only and does not grant release approval, accept vulnerabilities
 or claim an independent scanner attestation. Collection failures are visible in
-the notification/central intake workflow and must not be reported as success.
+the notification/central intake workflow and must not be reported as successful
+intake. A dispatch failure remains separate from the completed producer tests so
+that an invalid token cannot turn valid test evidence into a failed assessment.

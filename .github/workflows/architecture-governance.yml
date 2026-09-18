@@ -70,6 +70,7 @@ jobs:
 
       - name: Notify governance repository
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
         env:
           RESULT_INTAKE_TOKEN: ${{ secrets.GH_RESULT_INTAKE_TOKEN }}
         run: |

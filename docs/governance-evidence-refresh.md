@@ -21,3 +21,9 @@ The existing DevSecOps blocking mode, architecture report-only behavior and
 baseline versions are retained. The central review deadline for the legacy
 DevSecOps blocking exception remains 12 December 2026. This maintenance record
 does not approve new enforcement or certify the outcome of the upcoming runs.
+
+The downstream dispatch uses `GH_RESULT_INTAKE_TOKEN`. A missing, expired or
+rejected token is emitted as a visible warning and means that no central intake
+was requested. It does not rewrite a completed producer assessment as a failed
+governance result. Restore the token and retry the dispatch or request the
+central intake manually before treating the new result as accepted.

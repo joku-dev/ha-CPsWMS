@@ -24,10 +24,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Request central full-archive Trust verification
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_RESULT_INTAKE_TOKEN }}
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::warning::GH_RESULT_INTAKE_TOKEN is not configured; typed evidence intake was not triggered."
+            exit 0
+          fi
           python3 - <<'PY'
           import json, os, subprocess, tempfile
           payload = {'event_type': 'typed-evidence-trust-ready', 'client_payload': {

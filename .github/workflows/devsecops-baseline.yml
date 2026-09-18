@@ -502,6 +502,7 @@ jobs:
 
     steps:
       - name: Notify governance repository
+        continue-on-error: true
         env:
           RESULT_INTAKE_TOKEN: ${{ secrets.GH_RESULT_INTAKE_TOKEN }}
         run: |
