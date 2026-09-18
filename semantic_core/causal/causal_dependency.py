@@ -1,23 +1,22 @@
 """Causal dependency graph for semantic reasoning."""
 
-from typing import Dict, List, Optional
 
 
 class CausalDependencyGraph:
     """Represents causal relationships between semantic entities."""
 
     def __init__(self):
-        self.dependencies: Dict[str, List[str]] = {}
+        self.dependencies: dict[str, list[str]] = {}
 
     def add_dependency(self, cause: str, effect: str) -> None:
         """Register a directional causal dependency."""
         self.dependencies.setdefault(cause, []).append(effect)
 
-    def get_effects(self, cause: str) -> List[str]:
+    def get_effects(self, cause: str) -> list[str]:
         """Return direct effects of a cause."""
         return self.dependencies.get(cause, [])
 
-    def is_causal_path(self, start: str, target: str, visited: List[str] | None = None) -> bool:
+    def is_causal_path(self, start: str, target: str, visited: list[str] | None = None) -> bool:
         """Determine whether there is a causal path from start to target."""
         if visited is None:
             visited = []
@@ -32,7 +31,7 @@ class CausalDependencyGraph:
                 return True
         return False
 
-    def get_causal_chain(self, start: str, target: str) -> List[str]:
+    def get_causal_chain(self, start: str, target: str) -> list[str]:
         """Return one causal chain from start to target, if present."""
         if start == target:
             return [start]

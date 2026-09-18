@@ -1,16 +1,15 @@
 """Ontology store for semantic categories and concept relationships."""
 
-from typing import Dict, List, Optional
 
 
 class OntologyStore:
     """Stores ontology concepts and simple hierarchies."""
 
     def __init__(self):
-        self.concepts: Dict[str, Dict[str, str]] = {}
-        self.relationships: Dict[str, List[str]] = {}
+        self.concepts: dict[str, dict[str, str]] = {}
+        self.relationships: dict[str, list[str]] = {}
 
-    def register_concept(self, concept_id: str, metadata: Dict[str, str] | None = None) -> None:
+    def register_concept(self, concept_id: str, metadata: dict[str, str] | None = None) -> None:
         """Register a semantic concept in the ontology."""
         self.concepts[concept_id] = metadata or {}
 
@@ -18,11 +17,11 @@ class OntologyStore:
         """Add a directional relationship between concepts."""
         self.relationships.setdefault(source_concept, []).append(target_concept)
 
-    def get_concept(self, concept_id: str) -> Optional[Dict[str, str]]:
+    def get_concept(self, concept_id: str) -> dict[str, str] | None:
         """Retrieve metadata for a concept."""
         return self.concepts.get(concept_id)
 
-    def get_children(self, concept_id: str) -> List[str]:
+    def get_children(self, concept_id: str) -> list[str]:
         """Get immediate sub-concepts."""
         return self.relationships.get(concept_id, [])
 

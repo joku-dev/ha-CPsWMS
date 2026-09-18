@@ -1,5 +1,7 @@
 """Simulation readiness enrichment for what-if scenario coverage."""
 
+from typing import ClassVar
+
 from enrichers.base import BaseEnricher
 
 
@@ -11,7 +13,7 @@ class SimulationReadinessEnricher(BaseEnricher):
     schema_file = "simulation_readiness_schema.json"
     response_key = "readiness_assessments"
 
-    target_matchers = {
+    target_matchers: ClassVar[dict[str, str]] = {
         "capability": "MATCH (target:Capability {name: $target_id})",
         "integration": "MATCH (target:Integration {domain: $target_id})",
         "entity": "MATCH (target:Entity {entity_id: $target_id})",

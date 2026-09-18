@@ -1,6 +1,5 @@
 """Unit normalization utilities for semantic entity attributes."""
 
-from typing import Dict
 
 _UNIT_ALIASES = {
     "°c": "celsius",

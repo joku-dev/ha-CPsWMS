@@ -1,5 +1,7 @@
 """Dependency reasoning enrichment across entities in the graph."""
 
+from typing import ClassVar
+
 from enrichers.base import BaseEnricher
 
 
@@ -10,13 +12,12 @@ class DependencyReasoningEnricher(BaseEnricher):
     prompt_file = "dependency_reasoning.md"
     schema_file = "dependency_reasoning_schema.json"
     response_key = "relationships"
-    graph_relationship_types = {
+    graph_relationship_types: ClassVar[dict[str, str]] = {
         "depends_on": "DEPENDS_ON",
     }
 
     def create_constraints(self):
         """No additional constraints required for relationship edges."""
-        pass
 
     def get_candidates(self, limit):
         """Fetch entity context used to infer semantic dependencies."""

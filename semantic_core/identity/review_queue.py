@@ -1,6 +1,5 @@
 """Review queue for uncertain entity resolutions."""
 
-from typing import Dict, List
 
 from .models import ResolutionDecision
 
@@ -9,14 +8,14 @@ class ReviewQueue:
     """Manages pending resolution decisions that require review."""
 
     def __init__(self):
-        self.pending_reviews: Dict[str, ResolutionDecision] = {}
+        self.pending_reviews: dict[str, ResolutionDecision] = {}
 
     def add_to_review(self, decision: ResolutionDecision) -> None:
         """Add a decision to the review queue."""
         if decision.review_required:
             self.pending_reviews[decision.decision_id] = decision
 
-    def get_pending_reviews(self) -> List[ResolutionDecision]:
+    def get_pending_reviews(self) -> list[ResolutionDecision]:
         """Get all pending review decisions."""
         return list(self.pending_reviews.values())
 

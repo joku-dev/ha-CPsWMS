@@ -1,24 +1,30 @@
 import json
-import time
 from abc import ABC, abstractmethod
-from datetime import date, datetime, time as datetime_time
-
-from neo4j import GraphDatabase
-from neo4j.exceptions import ServiceUnavailable, SessionExpired, TransientError
-from openai import OpenAI
+from datetime import date, datetime
+from datetime import time as datetime_time
 
 from config import (
-    OPENAI_API_KEY,
-    OPENAI_MODEL,
-    NEO4J_URI,
-    NEO4J_USER,
-    NEO4J_PASSWORD,
     BATCH_SIZE,
     MIN_CONFIDENCE,
+    NEO4J_PASSWORD,
+    NEO4J_URI,
+    NEO4J_USER,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
     PROMPTS_DIR,
     SCHEMAS_DIR,
 )
 from enrichment_target_resolver import EnrichmentTargetResolver
+from neo4j.exceptions import (
+    DriverError,
+    Neo4jError,
+    ServiceUnavailable,
+    SessionExpired,
+    TransientError,
+)
+from openai import OpenAI, OpenAIError
+
+from neo4j import GraphDatabase
 
 
 class BaseEnricher(ABC):
@@ -50,8 +56,8 @@ class BaseEnricher(ABC):
         """Reset the Neo4j driver after connection-pool failures."""
         try:
             self.driver.close()
-        except Exception:
-            pass
+        except (DriverError, Neo4jError, OSError) as exc:
+            print(f"[{self.name}] Closing stale Neo4j driver failed: {exc}")
         self.driver = GraphDatabase.driver(
             NEO4J_URI,
             auth=(NEO4J_USER, NEO4J_PASSWORD),
@@ -165,7 +171,7 @@ class BaseEnricher(ABC):
                 print(f"[{self.name}] JSONDecodeError: {exc}")
                 return {self.response_key: []}
 
-        except Exception as exc:
+        except (OpenAIError, OSError, TypeError, ValueError) as exc:
             print(f"[{self.name}] OpenAI call failed: {exc}")
             return {self.response_key: []}
 
@@ -175,7 +181,7 @@ class BaseEnricher(ABC):
 
         try:
             confidence = float(confidence)
-        except Exception:
+        except (TypeError, ValueError):
             return False
 
         if confidence < MIN_CONFIDENCE:

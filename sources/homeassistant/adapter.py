@@ -1,6 +1,6 @@
 """Home Assistant source adapter for converting entities to RawEntity."""
 
-from typing import Dict, Any
+from typing import Any
 
 from semantic_core.identity.models import RawEntity
 
@@ -11,7 +11,7 @@ class HomeAssistantAdapter:
     def __init__(self, source_id: str = "homeassistant"):
         self.source_id = source_id
 
-    def convert_entity(self, ha_entity: Dict[str, Any]) -> RawEntity:
+    def convert_entity(self, ha_entity: dict[str, Any]) -> RawEntity:
         """
         Convert a Home Assistant entity dict to a RawEntity.
 

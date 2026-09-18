@@ -3,8 +3,12 @@
 import json
 
 from neo4j import GraphDatabase
-
-from semantic_core.identity.models import CanonicalEntity, Evidence, RawEntity, ResolutionDecision, SourceSystem
+from semantic_core.identity.models import (
+    CanonicalEntity,
+    RawEntity,
+    ResolutionDecision,
+    SourceSystem,
+)
 
 
 def serialize_property(value):
@@ -32,8 +36,8 @@ class Neo4jRepository:
         if session is not None:
             session.run(query, **kwargs)
             return
-        with self.driver.session() as session:
-            session.run(query, **kwargs)
+        with self.driver.session() as driver_session:
+            driver_session.run(query, **kwargs)
 
     def save_source_system(self, source: SourceSystem, session=None) -> None:
         """Save a source system node."""

@@ -1,6 +1,6 @@
 """Schema mapper for source-specific payloads into canonical semantic models."""
 
-from typing import Any, Dict
+from typing import Any
 
 from semantic_core.identity.models import RawEntity
 
@@ -8,7 +8,7 @@ from semantic_core.identity.models import RawEntity
 class SchemaMapper:
     """Maps heterogeneous source schemas into RawEntity objects."""
 
-    def map_homeassistant_entity(self, ha_entity: Dict[str, Any], source_id: str = "homeassistant") -> RawEntity:
+    def map_homeassistant_entity(self, ha_entity: dict[str, Any], source_id: str = "homeassistant") -> RawEntity:
         """Convert a Home Assistant entity payload into a RawEntity."""
         entity_id = ha_entity.get("entity_id", "")
         attributes = ha_entity.get("attributes", {}) or {}

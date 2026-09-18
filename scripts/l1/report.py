@@ -11,7 +11,15 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from evidence import ROOT, SERVICES, archive_identity, context, sha, write
+from evidence import (
+    ROOT,
+    SERVICES,
+    archive_identity,
+    context,
+    locked_packages,
+    sha,
+    write,
+)
 
 BASELINE = 'l1-baseline-v1.1.3'
 TITLES = [
@@ -23,6 +31,10 @@ TITLES = [
     'Authorized deployment approval', 'Only approved artifacts deployed',
     'Machine-readable pipeline evidence', 'Operational versions and security events',
 ]
+REQUIRED_CHECKS = {
+    'validate-ubuntu', 'validate-debian', 'DevSecOps Governance',
+    'Architecture Runtime Governance', 'L1 coverage report',
+}
 
 
 def load(path):
@@ -95,6 +107,81 @@ def inspect_image(directory, service):
             'vulnerabilities': [v for result in results for v in result.get('Vulnerabilities', [])]}
 
 
+def inspect_dependencies(directory):
+    record = load(directory / 'dependency-locks.json')
+    if record.get('python') != '3.12' or set(record.get('locks', {})) != {
+            'ha-sync', 'query-api', 'semantic-enrichment', 'world-model-chat', 'application', 'ci'}:
+        raise ValueError('Dependency lock profiles are incomplete')
+    packages = {}
+    for name, lock in record['locks'].items():
+        input_path = directory / lock['evidence_input']
+        lock_path = directory / lock['evidence_lock']
+        if (sha(input_path) != lock['input_sha256'] or sha(lock_path) != lock['lock_sha256']
+                or not lock.get('hashes_required')):
+            raise ValueError('Dependency lock bytes do not match: ' + name)
+        packages[name] = locked_packages(lock_path)
+        if len(packages[name]) != lock['package_count']:
+            raise ValueError('Dependency package count mismatch: ' + name)
+    for service in ('ha-sync', 'query-api', 'semantic-enrichment', 'world-model-chat'):
+        if not set(packages[service].items()).issubset(set(packages['application'].items())):
+            raise ValueError('Application inventory omits ' + service)
+    if not set(packages['application'].items()).issubset(set(packages['ci'].items())):
+        raise ValueError('CI inventory omits application packages')
+    sboms = {}
+    for profile in ('application', 'ci'):
+        sbom = load(directory / ('dependency-sbom-' + profile + '.cyclonedx.json'))
+        if sbom.get('bomFormat') != 'CycloneDX' or len(sbom.get('components', [])) < len(packages[profile]):
+            raise ValueError('Dependency SBOM incomplete: ' + profile)
+        if not execution_ok(directory, 'dependency-sbom-' + profile):
+            raise ValueError('Dependency SBOM command failed: ' + profile)
+        sboms[profile] = len(sbom['components'])
+    if not execution_ok(directory, 'dependency-audit', (0, 1)):
+        raise ValueError('Dependency audit command failed')
+    audit = load(directory / 'dependency-audit.json')
+    if not isinstance(audit.get('dependencies'), list):
+        raise TypeError('Dependency audit is invalid')
+    vulnerabilities = [v for dependency in audit['dependencies'] for v in dependency.get('vulns', [])]
+    return {'packages': {name: len(value) for name, value in packages.items()},
+            'sbom_components': sboms, 'vulnerabilities': vulnerabilities,
+            'resolver': record.get('resolver')}
+
+
+def inspect_main_ruleset(directory):
+    try:
+        listing = load(directory / 'rulesets.json')
+    except (OSError, ValueError, TypeError):
+        return None
+    if listing.get('http_status') != 200 or not isinstance(listing.get('data'), list):
+        return None
+    details = load(directory / 'ruleset-details.json')
+    if not isinstance(details, list):
+        return None
+    by_id = {row.get('data', {}).get('id'): row for row in details}
+    for summary in listing['data']:
+        ruleset_id = summary.get('id')
+        if not isinstance(ruleset_id, int):
+            continue
+        detail_response = by_id.get(ruleset_id, {})
+        if detail_response.get('http_status') != 200:
+            continue
+        detail = detail_response.get('data', {})
+        conditions = detail.get('conditions', {}).get('ref_name', {})
+        includes = set(conditions.get('include', []))
+        rules = {rule.get('type'): rule for rule in detail.get('rules', [])}
+        checks = {item.get('context') for item in rules.get('required_status_checks', {}).get(
+            'parameters', {}).get('required_status_checks', [])}
+        protects_main = 'refs/heads/main' in includes or '~DEFAULT_BRANCH' in includes
+        required_rules = {'deletion', 'non_fast_forward', 'pull_request', 'required_status_checks'}
+        if (detail.get('enforcement') == 'active' and protects_main
+                and not detail.get('bypass_actors') and required_rules.issubset(rules)
+                and REQUIRED_CHECKS.issubset(checks)):
+            return {'id': ruleset_id, 'name': detail.get('name'),
+                    'required_checks': sorted(checks),
+                    'required_approvals': rules['pull_request'].get('parameters', {}).get(
+                        'required_approving_review_count')}
+    return None
+
+
 def build_report(base, expected):
     errors, manifests = {}, {}
     names = ['source', 'platform', 'runtime', *('image-' + s for s in SERVICES)]
@@ -134,6 +221,7 @@ def build_report(base, expected):
     platform = base / 'platform'
     identity_ok = False
     protection = None
+    main_ruleset = None
     if 'platform' not in errors:
         try:
             commit = load(platform / 'commit.json')
@@ -141,14 +229,19 @@ def build_report(base, expected):
             response = load(platform / 'protection.json')
             if response.get('http_status') == 200:
                 protection = response['data']
+            main_ruleset = inspect_main_ruleset(platform)
         except (OSError, ValueError, KeyError, TypeError) as exc:
             errors['platform'] = str(exc)
             identity_ok = False
             protection = None
+            main_ruleset = None
     row(2, 'measured' if identity_ok else 'gap',
         'GitHub commit identity queried directly. PR/review responses retained; this does not invent an independent approval.', ['platform/commit.json', 'platform/pulls.json'])
-    row(3, 'partial' if protection else 'gap',
-        'Protection configuration captured; bypass/direct-push policy requires assessment.' if protection else 'Protection API unavailable or collection invalid; protected=True is insufficient to prove direct-push prohibition.', ['platform/protection.json', 'platform/rules.json'])
+    row(3, 'measured' if main_ruleset else 'partial' if protection else 'gap',
+        ('Active main ruleset requires pull requests and five governance/validation checks, blocks deletion and force pushes, and has no bypass actors.'
+         if main_ruleset else 'Legacy protection captured, but no complete active main ruleset without bypass actors was verified.'
+         if protection else 'Protection APIs unavailable or no verified direct-push prohibition.'),
+        ['platform/protection.json', 'platform/rules.json', 'platform/rulesets.json'])
     static = None
     if 'source' not in errors:
         try:
@@ -159,8 +252,17 @@ def build_report(base, expected):
             static = {'bandit': len(bandit['results']), 'ruff': len(ruff)}
         except (OSError, ValueError, KeyError):
             pass
-    row(4, 'findings' if static and sum(static.values()) else 'partial' if static else 'gap',
-        f'Executed SAST/lint: {static}. Findings need assessment; findings_reviewed is never inferred.' if static else 'No valid SAST/lint evidence.', ['source/bandit.json', 'source/ruff.json'])
+    row(4, 'findings' if static and sum(static.values()) else 'measured' if static else 'gap',
+        f'Executed SAST/lint: {static}. No machine findings remain.' if static and not sum(static.values())
+        else f'Executed SAST/lint: {static}. Findings need assessment.' if static
+        else 'No valid SAST/lint evidence.', ['source/bandit.json', 'source/ruff.json'])
+
+    dependencies = None
+    if 'source' not in errors:
+        try:
+            dependencies = inspect_dependencies(base / 'source')
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            errors['source-dependencies'] = str(exc)
 
     images = {}
     for service in SERVICES:
@@ -175,14 +277,25 @@ def build_report(base, expected):
                 errors[name] = str(exc)
     all_images = len(images) == len(SERVICES)
     image_refs = ['image-' + s + '/subject.json' for s in SERVICES]
-    row(5, 'measured' if all_images else 'gap', 'Actual OS and application packages from all five immutable images; development/build tools are outside runtime inventory.', ['image-' + s + '/sbom.cyclonedx.json' for s in SERVICES])
+    row(5, 'measured' if all_images and dependencies else 'gap',
+        'Hash-locked application and CI/tool inventories plus actual packages from all five immutable images.'
+        if all_images and dependencies else 'Complete image and hash-locked dependency inventories were not verified.',
+        ['source/dependency-locks.json', 'source/dependency-sbom-application.cyclonedx.json',
+         'source/dependency-sbom-ci.cyclonedx.json', *('image-' + s + '/sbom.cyclonedx.json' for s in SERVICES)])
     row(6, 'measured' if all_images else 'gap', 'CycloneDX generated for each archived image, bound through immutable image ID and archive digest.', image_refs)
-    row(7, 'partial' if all_images else 'gap', 'Automated builds with pinned base images and retained logs; Python dependency resolution is recorded by SBOM but lockfiles/reproducible rebuilds remain open.', image_refs)
+    row(7, 'measured' if all_images and dependencies else 'gap',
+        'Automated builds use digest-pinned base images and Python 3.12 locks with exact versions and SHA-256 hashes.'
+        if all_images and dependencies else 'Pinned build inputs and dependency locks were not both verified.',
+        [*image_refs, 'source/dependency-locks.json'])
     row(8, 'measured' if all_images else 'gap', 'Build outputs identified by image ID, source commit and archive SHA-256.', image_refs)
     row(9, 'measured' if all_images else 'gap', 'Trivy executed on the same immutable image IDs, including OS packages; scanner errors invalidate evidence.', ['image-' + s + '/vulnerabilities.json' for s in SERVICES])
     vulnerabilities = [v for i in images.values() for v in i['vulnerabilities']]
-    row(10, 'findings' if vulnerabilities else 'partial' if all_images else 'gap',
-        f'{len(vulnerabilities)} image/package findings (may repeat across images). No release assessment or risk acceptance is inferred from scanner completion.', ['image-' + s + '/vulnerabilities.json' for s in SERVICES])
+    dependency_vulnerabilities = dependencies['vulnerabilities'] if dependencies else []
+    all_vulnerabilities = vulnerabilities + dependency_vulnerabilities
+    row(10, 'findings' if all_vulnerabilities else 'measured' if all_images and dependencies else 'gap',
+        f'{len(vulnerabilities)} image findings and {len(dependency_vulnerabilities)} application dependency findings. No release risk acceptance is inferred.'
+        if all_images and dependencies else 'Complete vulnerability assessment evidence was not verified.',
+        [*('image-' + s + '/vulnerabilities.json' for s in SERVICES), 'source/dependency-audit.json'])
     row(11, 'partial' if all_images else 'gap', 'Archives and evidence hashes recomputed after artifact download. Repository access controls/retention and independent provenance remain separate checks.', image_refs)
     row(12, 'measured' if all_images else 'gap', 'Build config digests, transported tags and archive hashes verified for the actual archived artifacts; target runtime IDs are recorded after import.', image_refs)
     row(13, 'gap', 'No production/staging deployment approval is recorded. A push, green run, PR merge or review exception is not deployment approval.', ['platform/environments.json'])
@@ -195,7 +308,11 @@ def build_report(base, expected):
             'summary': dict(Counter(r['coverage'] for r in rows)), 'controls': rows,
             'traceability': links, 'test_summary': dict(Counter(c['status'] for c in cases)),
             'static_analysis': static, 'images': {s: {k: v for k, v in i.items() if k != 'vulnerabilities'} for s, i in images.items()},
+            'dependency_inventory': ({k: v for k, v in dependencies.items() if k != 'vulnerabilities'}
+                                     if dependencies else None),
+            'main_ruleset': main_ruleset,
             'vulnerability_severities': dict(Counter(v.get('Severity', 'UNKNOWN') for v in vulnerabilities)),
+            'dependency_vulnerability_count': len(dependency_vulnerabilities),
             'evidence_errors': errors,
             'limitations': traceability['remaining_scope']}
 

@@ -5,19 +5,20 @@ This module owns runtime ordering, startup checks, and resilient loop execution.
 import time
 
 from config import SLEEP_SECONDS
-from enrichers.semantic_roles import SemanticRolesEnricher
-from enrichers.automation_intent import AutomationIntentEnricher
-from enrichers.fault_analysis import FaultAnalysisEnricher
 from enrichers.anomaly_detection import AnomalyDetectionEnricher
-from enrichers.temporal_event_model import TemporalEventModelEnricher
+from enrichers.automation_intent import AutomationIntentEnricher
+from enrichers.capability_mapping import CapabilityMappingEnricher
+from enrichers.causal_dependency import CausalDependencyEnricher
+from enrichers.dependency_reasoning import DependencyReasoningEnricher
+from enrichers.failure_impact import FailureImpactEnricher
+from enrichers.fault_analysis import FaultAnalysisEnricher
+from enrichers.recommended_actions import RecommendedActionsEnricher
 from enrichers.room_inference import RoomInferenceEnricher
 from enrichers.semantic_descriptions import SemanticDescriptionsEnricher
-from enrichers.failure_impact import FailureImpactEnricher
-from enrichers.capability_mapping import CapabilityMappingEnricher
-from enrichers.recommended_actions import RecommendedActionsEnricher
-from enrichers.dependency_reasoning import DependencyReasoningEnricher
-from enrichers.causal_dependency import CausalDependencyEnricher
+from enrichers.semantic_roles import SemanticRolesEnricher
 from enrichers.simulation_readiness import SimulationReadinessEnricher
+from enrichers.temporal_event_model import TemporalEventModelEnricher
+from neo4j.exceptions import DriverError, Neo4jError
 
 
 def wait_for_neo4j(enricher, retries=30, delay=5):
@@ -28,7 +29,7 @@ def wait_for_neo4j(enricher, retries=30, delay=5):
                 session.run("RETURN 1")
             print("Neo4j connection established.")
             return
-        except Exception as exc:
+        except (DriverError, Neo4jError, OSError) as exc:
             print(f"Waiting for Neo4j... attempt {attempt}/{retries}: {exc}")
             time.sleep(delay)
 
@@ -74,7 +75,9 @@ def main():
             try:
                 print(f"Running enricher: {enricher.name}")
                 enricher.run_once()
-            except Exception as exc:
+            # Worker isolation is deliberate: a single enricher must not stop
+            # the other independent enrichment cycles.
+            except Exception as exc:  # noqa: BLE001
                 print(f"Enricher failed: {enricher.name}: {exc}")
 
         time.sleep(SLEEP_SECONDS)

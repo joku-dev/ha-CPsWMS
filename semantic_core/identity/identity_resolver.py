@@ -1,7 +1,6 @@
 """Identity resolver for mapping raw entities to canonical entities."""
 
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, timezone
 
 from .canonical_registry import CanonicalRegistry
 from .confidence_model import ConfidenceModel
@@ -18,7 +17,7 @@ class IdentityResolver:
     def resolve(
         self,
         raw_entity: RawEntity,
-        candidates: List[CanonicalEntity],
+        candidates: list[CanonicalEntity],
         source_trust: float = 0.8
     ) -> ResolutionDecision:
         """
@@ -36,7 +35,7 @@ class IdentityResolver:
             # No candidates, create new
             new_entity = self.registry.create_new_entity(raw_entity)
             return ResolutionDecision(
-                decision_id=f"decision_{raw_entity.raw_entity_id}_{datetime.now().isoformat()}",
+                decision_id=f"decision_{raw_entity.raw_entity_id}_{datetime.now(timezone.utc).isoformat()}",
                 raw_entity_id=raw_entity.raw_entity_id,
                 canonical_id=new_entity.canonical_id,
                 decision_type="created_new",
@@ -44,7 +43,7 @@ class IdentityResolver:
                 overall_confidence=0.0,
                 evidence=[],
                 review_required=False,
-                created_at=datetime.now()
+                created_at=datetime.now(timezone.utc)
             )
 
         # Score all candidates
@@ -70,7 +69,7 @@ class IdentityResolver:
             # Create new entity
             new_entity = self.registry.create_new_entity(raw_entity)
             return ResolutionDecision(
-                decision_id=f"decision_{raw_entity.raw_entity_id}_{datetime.now().isoformat()}",
+                decision_id=f"decision_{raw_entity.raw_entity_id}_{datetime.now(timezone.utc).isoformat()}",
                 raw_entity_id=raw_entity.raw_entity_id,
                 canonical_id=new_entity.canonical_id,
                 decision_type="created_new",
@@ -78,11 +77,11 @@ class IdentityResolver:
                 overall_confidence=best_confidence,
                 evidence=best_evidence,
                 review_required=False,
-                created_at=datetime.now()
+                created_at=datetime.now(timezone.utc)
             )
 
         return ResolutionDecision(
-            decision_id=f"decision_{raw_entity.raw_entity_id}_{datetime.now().isoformat()}",
+            decision_id=f"decision_{raw_entity.raw_entity_id}_{datetime.now(timezone.utc).isoformat()}",
             raw_entity_id=raw_entity.raw_entity_id,
             canonical_id=best_candidate.canonical_id,
             decision_type=decision_type,
@@ -90,5 +89,5 @@ class IdentityResolver:
             overall_confidence=best_confidence,
             evidence=best_evidence,
             review_required=review_required,
-            created_at=datetime.now()
+            created_at=datetime.now(timezone.utc)
         )

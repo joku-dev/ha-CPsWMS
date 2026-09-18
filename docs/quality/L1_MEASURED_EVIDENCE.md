@@ -20,8 +20,11 @@ abgenommen wurde. Der bestehende deklarationsbasierte L1-Report bleibt ein
 getrennter Bericht. Dessen `pass` darf nicht als Freigabe dieser Messungen gelten.
 
 Findings sind report-only. Testfehler, Tool-Abstürze, fehlende Ausgaben und
-Integritätsfehler lassen den neuen Prüflauf fehlschlagen. Es wird kein neuer
-Required Check eingerichtet und der bisherige Blocking-Modus wird nicht geändert.
+Integritätsfehler lassen den Prüflauf fehlschlagen. Der Main-Ruleset verlangt den
+Check `L1 coverage report` zusammen mit den beiden Plattformvalidierungen und den
+DevSecOps-/Architektur-Governance-Checks. Direkte Main-Pushes, Force-Pushes und
+Branch-Löschung sind gesperrt. Der Solo-Maintainer-Workflow verlangt weiterhin
+keine unabhängige Review-Freigabe; eine grüne Pipeline ist keine Deployment-Freigabe.
 
 ## Kontrollzuordnung
 
@@ -29,14 +32,14 @@ Required Check eingerichtet und der bisherige Blocking-Modus wird nicht geänder
 |---|---|---|
 | 001 | Technische Anforderungen → ausgeführte pytest-Testfälle → JUnit | Vollständige freigegebene Systemanforderungen fehlen |
 | 002 | GitHub Commit-, PR- und Review-API | Keine fingierte unabhängige Review-Freigabe |
-| 003 | GitHub Branch-Protection und Rules-API | 403 bleibt Lücke; Bypass-/Direktpush-Regeln bewerten |
-| 004 | Bandit, Ruff, Chat-Negativtests | Findings müssen bewertet werden |
-| 005 | Trivy-Paketinventar aller fünf Laufzeitimages | Build-/Entwicklungswerkzeuge sind separater Scope |
+| 003 | GitHub Ruleset-, Branch-Protection- und Rules-API | Aktiver Main-Ruleset ohne Bypass, PR-Pflicht und fünf Required Checks |
+| 004 | Bandit, Ruff, Chat-Negativtests | Nullbefund wird als gemessene technische Prüfung ausgewiesen |
+| 005 | Hash-gelockte Anwendungs-/CI-Inventare und Trivy-Inventar aller fünf Images | Laufzeit, Anwendung sowie Build-/Testwerkzeuge abgedeckt |
 | 006 | CycloneDX-SBOM je tatsächlich archiviertem Image | Keine handgeschriebene Komponentenliste |
-| 007 | Docker-Build-Protokolle, gepinnte Basisimages | Aufgelöste Python-Versionen erfasst; Lockfiles/reproduzierbarer Neubau offen |
+| 007 | Docker-Build-Protokolle, gepinnte Basisimages und Python-3.12-Locks mit SHA-256 | Images installieren ausschließlich aus den Locks |
 | 008 | Image-ID, Commit, Archiv-SHA-256 | Identifiziert tatsächlichen Build |
 | 009 | Trivy-CVE-Scan derselben Image-IDs | Toolfehler sind keine leeren Scans |
-| 010 | CVE-Rohbefunde und Schweregrade | Release-Risikobewertung bleibt offen |
+| 010 | Trivy- und `pip-audit`-Rohbefunde | Release-Risikobewertung bleibt offen |
 | 011 | Archiv-/Nachweis-Hashes nach Download erneut prüfen | Zugriffsschutz, Aufbewahrung und unabhängige Provenienz separat |
 | 012 | Inhaltsbasierte Artefaktidentität | Keine manuell behauptete Versionszuordnung |
 | 013 | Erfassung vorhandener GitHub-Environments | Autorisierte Zielumgebung/Release-Freigabe fehlt |
@@ -70,10 +73,18 @@ Alle fünf Images werden gebaut; Neo4j erhält eine eigene Patch-Schicht auf
 dem gepinnten Drittanbieter-Image. `quality/runtime-images.json` bindet die Basisimages per Digest.
 Jedes Image erhält eine echte CycloneDX-SBOM, Trivy-JSON und ein Docker-Archiv.
 Die Integration verwendet beide heruntergeladenen Archive, keine zweite
-unabhängige Neuauflösung der Abhängigkeiten. Python-Abhängigkeiten sind noch
-nicht gelockt; die SBOM dokumentiert die im jeweiligen Build installierten Versionen.
+unabhängige Neuauflösung der Abhängigkeiten. Python-Abhängigkeiten sind für jeden
+Service sowie als gemeinsames Anwendungs- und CI-/Tool-Profil exakt gelockt. Jeder
+Eintrag enthält SHA-256-Hashes; Docker und CI installieren mit
+`pip --require-hashes`. `cyclonedx-py` erzeugt zusätzlich je eine reproduzierbare
+CycloneDX-SBOM für Anwendung und CI/Tools. `pip-audit` prüft das Anwendungsprofil.
+Locks, Inputs, ihre Hashes und Werkzeugausführungen werden im Source-Evidence-
+Bundle gespeichert und nach dem Download erneut geprüft.
 
-Tool-Versionen stehen in `quality/tool-requirements.txt` und im Workflow. Roh-
+Direkte Anforderungen stehen in den `requirements.txt`- und `.in`-Dateien. Die
+ausführbaren Stände stehen ausschließlich in den `requirements.lock`-Dateien.
+Tool-Versionen stehen in `quality/tool-requirements.txt`; der vollständige
+installierbare Stand steht in `quality/ci-requirements.lock`. Roh-
 berichte, Exit-Codes, Laufzeiten und Befehle bleiben erhalten. Der Sammler trennt
 Scanner-Findings (Exit 1 bei gültigem Report) von Werkzeugfehlern. Jedes Bundle
 bindet Repository, Commit, Run und Versuch sowie SHA-256 aller enthaltenen Dateien.
@@ -87,15 +98,24 @@ sichtbar dokumentiert; PR-Code erhält keinen zusätzlichen privilegierten Token
 
 ## Lokal
 
-Python 3.12, Docker und die im Workflow gepinnten Werkzeuge verwenden. Ohne
-Docker können die Unit- und Report-Negativtests ausgeführt werden:
+Python 3.12, Docker und die gelockten Werkzeuge verwenden. Ohne Docker können die
+Unit- und Report-Negativtests ausgeführt werden:
 
 ```sh
-python -m pip install -r quality/tool-requirements.txt -r ha-sync/requirements.txt \
-  -r query-api/requirements.txt -r semantic-enrichment/requirements.txt \
-  -r world-model-chat/requirements.txt
+python -m pip install --require-hashes -r quality/ci-requirements.lock
 python -m pytest tests quality_tests --ignore=quality_tests/test_runtime.py -q
 ```
+
+Nach einer bewussten Änderung einer direkten Anforderung werden alle Locks mit
+dem festgelegten Resolver neu erzeugt und anschließend gemeinsam geprüft:
+
+```sh
+python -m pip install uv==0.8.22
+./scripts/update_dependency_locks.sh
+```
+
+Ein Lock-Update ist eine überprüfbare Lieferkettenänderung und wird zusammen mit
+den neuen SBOM-/Audit-Ergebnissen als Pull Request behandelt.
 
 Die Integrationsprüfung benötigt ausdrücklich `L1_RUNTIME_TESTS=1`, eine
 Commit-/Run-Identität und beide aus den Image-Jobs erzeugten Query-/Neo4j-Archive. Ein Skip

@@ -1,0 +1,5 @@
+# Aggregate application dependency input used for repository-level inventory.
+-r ../ha-sync/requirements.txt
+-r ../query-api/requirements.txt
+-r ../semantic-enrichment/requirements.txt
+-r ../world-model-chat/requirements.txt
