@@ -3,10 +3,10 @@
 Vom Maintainer am 16. September 2026 ausgewählt. Vorgesehener erster Umfang:
 `query-api` und Neo4j, getrennt von Produktion, Home Assistant und LLM-Diensten.
 Der vorbereitete Zielhost ist die Proxmox-VM `ha-cpswms-stg-01`
-(`192.168.200.197`). Der erste reale Staging-Lauf wurde am **18. September 2026** erfolgreich
-ausgeführt. Der deployte Softwarestand ist Commit
-`5d5772d989b0080ae041969315742c8fbbca6dfe` aus dem L1-Lauf
-`35351493542`. Beide Container sind aktiv und healthy; 19 von 19 Start-,
+(`192.168.200.197`). Der aktuelle reale Staging-Lauf wurde am **19. September 2026**
+erfolgreich ausgeführt. Der deployte Softwarestand ist Commit
+`2c9724dc34845f40425018a46d254c2b17221966` aus Versuch 2 des L1-Laufs
+`35386771107`. Beide Container sind aktiv und healthy; 19 von 19 Start-,
 Funktions-, Persistenz-, Wiederanlauf- und Laufzeithärtungsprüfungen wurden
 bestanden.
 
@@ -100,7 +100,23 @@ Die Compose-Datei allein erfüllt diese Kontrollen nicht. Erst der reale Lauf mi
 seinen Nachweisen kann die offenen Kontrollbestandteile schließen.
 
 
-## Ausgeführter Staging-Lauf vom 18. September 2026
+## Aktueller Staging-Lauf vom 19. September 2026
+
+Der aktuelle versionierte Nachweis liegt unter
+`deployment/staging/evidence/2026-09-19T06-26-29Z-run-35386771107-attempt-2/`.
+Er bindet das Deployment exakt an Commit
+`2c9724dc34845f40425018a46d254c2b17221966`, Lauf `35386771107`, Versuch 2
+und die dort erzeugten Query-API- und Neo4j-Archive. Die Freigabe bestätigt die
+bekannten 1 kritischen und 327 hohen Containerbefunde ausschließlich für diese
+isolierte Staging-Ausführung; sie enthält keine Risikoakzeptanz und keine
+Produktionsfreigabe.
+
+Alle 19 Prüfungen wurden erneut bestanden. Der dokumentierte Datenbankausfall
+wird weiterhin mit HTTP 500 statt 503 gemeldet (`STG-OBS-001`); die
+Wiederherstellung endet erfolgreich mit HTTP 200. Die lokalen Runtime-Image-IDs,
+Containerlogs, HTTP-Antworten und SHA-256-Prüfsummen sind im Nachweis enthalten.
+
+## Erster Staging-Lauf vom 18. September 2026
 
 Der versionierte Nachweis liegt unter
 `deployment/staging/evidence/2026-09-18T16-05-03Z-run-35351493542/`.

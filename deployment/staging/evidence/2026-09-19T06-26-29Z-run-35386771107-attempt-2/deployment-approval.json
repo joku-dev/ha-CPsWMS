@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "decision": "approved_for_staging",
+  "approved_at": "2026-09-19T06:26:29.938207+00:00",
+  "approved_by": "repository maintainer (interactive session)",
+  "approval_basis": "Maintainer authorization to implement packages 1-4 autonomously, including the exact isolated staging evidence needed to consolidate controls 013, 014 and 016.",
+  "risk_context": {
+    "critical_findings": 1,
+    "high_findings": 327,
+    "enforcement": "report_only",
+    "scope": "staging_only",
+    "risk_acceptance": false
+  },
+  "subject": {
+    "repository": "joku-dev/ha-CPsWMS",
+    "commit": "2c9724dc34845f40425018a46d254c2b17221966",
+    "evidence_run_id": "35386771107",
+    "evidence_run_attempt": 2
+  },
+  "target": {
+    "hostname": "ha-cpswms-stg-01",
+    "address": "192.168.200.197",
+    "environment": "staging"
+  },
+  "components": {
+    "query-api": {
+      "runtime_image_id": "sha256:98e7c60cd4f9b3dc1cda5f8caff532599c13ea1c5889da5592f34a7e4a893eec"
+    },
+    "neo4j": {
+      "runtime_image_id": "sha256:2fbf6e01f1dd315594112f3bc0682ed77045b4f70e5052971e29091d4ea23da4"
+    }
+  }
+}
