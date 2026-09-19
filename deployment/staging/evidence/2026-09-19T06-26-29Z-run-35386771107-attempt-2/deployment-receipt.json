@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_type": "staging_deployment",
+  "status": "pass",
+  "enforcement": "report_only",
+  "context": {
+    "repository": "joku-dev/ha-CPsWMS",
+    "commit": "2c9724dc34845f40425018a46d254c2b17221966",
+    "source_run_id": "35386771107",
+    "source_attempt": 2,
+    "environment": "staging"
+  },
+  "approval": {
+    "decision": "approved_for_staging",
+    "critical_findings_acknowledged": 1,
+    "high_findings_acknowledged": 327,
+    "risk_acceptance": false,
+    "record": "deployment-approval.json"
+  },
+  "target": {
+    "hostname": "ha-cpswms-stg-01",
+    "address": "192.168.200.197",
+    "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.39",
+    "docker_version": "29.8.1"
+  },
+  "deployment": {
+    "started_at": "2026-09-19T06:26:30Z",
+    "finished_at": "2026-09-19T06:27:45Z",
+    "project": "ha-cpswms-staging",
+    "compose_sha256": "a22b8db2b75c62a2e2329c20cd66db7ba7b9891eb9a820e7ab4b606968203ccb",
+    "api_binding": "127.0.0.1:18080",
+    "neo4j_host_port": null
+  },
+  "components": {
+    "query-api": {
+      "runtime_image_id": "sha256:98e7c60cd4f9b3dc1cda5f8caff532599c13ea1c5889da5592f34a7e4a893eec",
+      "health": "healthy"
+    },
+    "neo4j": {
+      "runtime_image_id": "sha256:2fbf6e01f1dd315594112f3bc0682ed77045b4f70e5052971e29091d4ea23da4",
+      "health": "healthy"
+    }
+  },
+  "tests": {
+    "pass": 19,
+    "fail": 0,
+    "database_outage_http_status": 500,
+    "database_recovery_http_status": 200
+  },
+  "security_boundaries": {
+    "query_api_non_root": true,
+    "query_api_read_only_rootfs": true,
+    "capabilities_dropped": true,
+    "no_new_privileges": true,
+    "api_loopback_only": true,
+    "neo4j_not_published": true,
+    "backend_network_internal": true
+  },
+  "observations": [
+    {
+      "severity": "low",
+      "id": "STG-OBS-001",
+      "summary": "The health endpoint returns HTTP 500 while Neo4j is unavailable. Dependency failure is detected and recovery succeeds."
+    }
+  ],
+  "artifacts": {
+    "capabilities.json": {
+      "sha256": "8d86e6ae4257ed0e628581df1342f28649b1089ca4f5a85dd1a604ec88fd2d06",
+      "bytes": 20
+    },
+    "checks.txt": {
+      "sha256": "f695fc9eb4c02e503a8dcd0f140b7898acdcfe314df1bce71f8b79708888774f",
+      "bytes": 488
+    },
+    "deployment-approval.json": {
+      "sha256": "b09be0a13ff054fe0681d3ef12842b0aee99f8f4380150223547c1224e29e26c",
+      "bytes": 1113
+    },
+    "health-after-api-restart.json": {
+      "sha256": "08e2c358ce13cb67f94ebb35b0f67c8763190a857c0db68da6eb196dfe9da46a",
+      "bytes": 16
+    },
+    "health-after-recovery.json": {
+      "sha256": "08e2c358ce13cb67f94ebb35b0f67c8763190a857c0db68da6eb196dfe9da46a",
+      "bytes": 16
+    },
+    "health-during-db-outage.json": {
+      "sha256": "b6c93fb2291a9a7c810020c3e89e03e7027b2f0fce504185806d9e6155b0c3b4",
+      "bytes": 128
+    },
+    "health.json": {
+      "sha256": "08e2c358ce13cb67f94ebb35b0f67c8763190a857c0db68da6eb196dfe9da46a",
+      "bytes": 16
+    },
+    "neo4j.log": {
+      "sha256": "1cb5370a63f3cf5eb0709a265078b4a62b967bffce241e52c05a12e5136c911e",
+      "bytes": 8356
+    },
+    "query-api.log": {
+      "sha256": "78852545e15234c583c014a8fd30fbf6a2516e0180831fff3552bee2184d1e0d",
+      "bytes": 699376
+    },
+    "simulation-readiness.json": {
+      "sha256": "077d6da0181a80de535dcb3ca2754e842673b46e3d14d0bca393aedee2c9c388",
+      "bytes": 29
+    },
+    "what-if-zigbee.json": {
+      "sha256": "ed5a9f9f1e30cf5df5bf3383b75031a7124711721c4b472f4c0e129f47ea487d",
+      "bytes": 66
+    }
+  },
+  "limitations": [
+    "Staging-only execution; no production approval.",
+    "Existing vulnerability findings remain report-only and unresolved; this record is not a risk acceptance.",
+    "No load, failover, backup-restore, or long-duration soak test was performed."
+  ]
+}
