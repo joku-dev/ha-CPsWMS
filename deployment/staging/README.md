@@ -5,8 +5,8 @@ Vom Maintainer am 16. September 2026 ausgewählt. Vorgesehener erster Umfang:
 Der vorbereitete Zielhost ist die Proxmox-VM `ha-cpswms-stg-01`
 (`192.168.200.197`). Der aktuelle reale Staging-Lauf wurde am **19. September 2026**
 erfolgreich ausgeführt. Der deployte Softwarestand ist Commit
-`2c9724dc34845f40425018a46d254c2b17221966` aus Versuch 2 des L1-Laufs
-`35386771107`. Beide Container sind aktiv und healthy; 19 von 19 Start-,
+`dc303dcdabb36d4218b68dee5d1bbaf5eb3bc09c` aus Versuch 1 des L1-Laufs
+`35428987714`. Beide Container sind aktiv und healthy; 19 von 19 Start-,
 Funktions-, Persistenz-, Wiederanlauf- und Laufzeithärtungsprüfungen wurden
 bestanden.
 
@@ -103,6 +103,22 @@ seinen Nachweisen kann die offenen Kontrollbestandteile schließen.
 ## Aktueller Staging-Lauf vom 19. September 2026
 
 Der aktuelle versionierte Nachweis liegt unter
+`deployment/staging/evidence/2026-09-19T08-04-49Z-run-35428987714-attempt-1/`.
+Er bindet das Deployment exakt an Commit
+`dc303dcdabb36d4218b68dee5d1bbaf5eb3bc09c`, Lauf `35428987714`, Versuch 1
+und die dort erzeugten Query-API- und Neo4j-Archive. Die Freigabe bestätigt die
+bekannten 1 kritischen und 328 hohen Containerbefunde ausschließlich für diese
+isolierte Staging-Ausführung; sie enthält keine Risikoakzeptanz und keine
+Produktionsfreigabe.
+
+Alle 19 Prüfungen wurden bestanden. Der kontrollierte Datenbankausfall wird mit
+HTTP 500 statt 503 gemeldet (`STG-OBS-001`); die Wiederherstellung endet mit HTTP
+200. Der Nachweis enthält die tatsächlichen Runtime-Image-IDs, Containerlogs,
+HTTP-Antworten, Laufzeithärtungsprüfungen und relative SHA-256-Prüfsummen.
+
+## Vorheriger Staging-Lauf vom 19. September 2026
+
+Der vorherige versionierte Nachweis liegt unter
 `deployment/staging/evidence/2026-09-19T06-26-29Z-run-35386771107-attempt-2/`.
 Er bindet das Deployment exakt an Commit
 `2c9724dc34845f40425018a46d254c2b17221966`, Lauf `35386771107`, Versuch 2
