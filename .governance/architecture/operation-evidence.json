@@ -8,8 +8,8 @@
   "evidence_refs": [
     "deployment/staging/README.md",
     "deployment/staging/compose.yml",
-    "deployment/staging/evidence/2026-09-19T06-26-29Z-run-35386771107-attempt-2/deployment-receipt.json",
-    "deployment/staging/evidence/2026-09-19T06-26-29Z-run-35386771107-attempt-2/SHA256SUMS"
+    "deployment/staging/evidence/2026-09-19T08-04-49Z-run-35428987714-attempt-1/deployment-receipt.json",
+    "deployment/staging/evidence/2026-09-19T08-04-49Z-run-35428987714-attempt-1/SHA256SUMS"
   ],
   "known_limitations": [
     "The approval and deployment apply to isolated staging only, not production.",

@@ -1,0 +1,43 @@
+Changed password for user 'neo4j'. IMPORTANT: this change will only take effect if performed before the database is started for the first time.
+2026-09-19 08:05:13.428+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-09-19 08:05:13.443+0000 INFO  Starting...
+2026-09-19 08:05:14.298+0000 INFO  This instance is ServerId{31c901a6} (31c901a6-958b-4557-8076-0b130c20bd94)
+2026-09-19 08:05:15.324+0000 INFO  ======== Neo4j 5.26.30 ========
+2026-09-19 08:05:16.987+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-09-19 08:05:17.019+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-09-19 08:05:18.659+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-09-19 08:05:18.660+0000 INFO  Remote interface available at http://localhost:7474/
+2026-09-19 08:05:18.663+0000 INFO  id: 4CC76709A800136646EE19577B5A1EC26ADF7B7CED29D8E73C0DE0CC120E5858
+2026-09-19 08:05:18.664+0000 INFO  name: system
+2026-09-19 08:05:18.664+0000 INFO  creationDate: 2026-09-18T16:01:30.354Z
+2026-09-19 08:05:18.664+0000 INFO  Started.
+2026-09-19 08:05:38.110+0000 INFO  Neo4j Server shutdown initiated by request
+2026-09-19 08:05:38.110+0000 INFO  Stopping...
+Changed password for user 'neo4j'. IMPORTANT: this change will only take effect if performed before the database is started for the first time.
+2026-09-19 08:05:52.189+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-09-19 08:05:52.204+0000 INFO  Starting...
+2026-09-19 08:05:53.084+0000 INFO  This instance is ServerId{31c901a6} (31c901a6-958b-4557-8076-0b130c20bd94)
+2026-09-19 08:05:54.129+0000 INFO  ======== Neo4j 5.26.30 ========
+2026-09-19 08:05:55.724+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-09-19 08:05:55.756+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-09-19 08:05:57.294+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-09-19 08:05:57.295+0000 INFO  Remote interface available at http://localhost:7474/
+2026-09-19 08:05:57.298+0000 INFO  id: 4CC76709A800136646EE19577B5A1EC26ADF7B7CED29D8E73C0DE0CC120E5858
+2026-09-19 08:05:57.299+0000 INFO  name: system
+2026-09-19 08:05:57.299+0000 INFO  creationDate: 2026-09-18T16:01:30.354Z
+2026-09-19 08:05:57.299+0000 INFO  Started.
+2026-09-19 08:06:06.786+0000 INFO  Neo4j Server shutdown initiated by request
+2026-09-19 08:06:06.788+0000 INFO  Stopping...
+Changed password for user 'neo4j'. IMPORTANT: this change will only take effect if performed before the database is started for the first time.
+2026-09-19 08:06:21.005+0000 INFO  Logging config in use: File '/var/lib/neo4j/conf/user-logs.xml'
+2026-09-19 08:06:21.020+0000 INFO  Starting...
+2026-09-19 08:06:21.888+0000 INFO  This instance is ServerId{31c901a6} (31c901a6-958b-4557-8076-0b130c20bd94)
+2026-09-19 08:06:22.963+0000 INFO  ======== Neo4j 5.26.30 ========
+2026-09-19 08:06:24.556+0000 INFO  Anonymous Usage Data is being sent to Neo4j, see https://neo4j.com/docs/usage-data/
+2026-09-19 08:06:24.587+0000 INFO  Bolt enabled on 0.0.0.0:7687.
+2026-09-19 08:06:26.083+0000 INFO  HTTP enabled on 0.0.0.0:7474.
+2026-09-19 08:06:26.084+0000 INFO  Remote interface available at http://localhost:7474/
+2026-09-19 08:06:26.087+0000 INFO  id: 4CC76709A800136646EE19577B5A1EC26ADF7B7CED29D8E73C0DE0CC120E5858
+2026-09-19 08:06:26.087+0000 INFO  name: system
+2026-09-19 08:06:26.087+0000 INFO  creationDate: 2026-09-18T16:01:30.354Z
+2026-09-19 08:06:26.088+0000 INFO  Started.

@@ -1,0 +1,1 @@
+{"error": "query_failed", "detail": "Failed to DNS resolve address neo4j:7687: [Errno -3] Temporary failure in name resolution"}
