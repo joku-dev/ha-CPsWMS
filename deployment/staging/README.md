@@ -149,3 +149,14 @@ curl http://127.0.0.1:18080/health
 
 Die Freigabe gilt ausschließlich für diese Staging-Umgebung und den im Receipt
 genannten Softwarestand.
+
+## Trennung von Anwendungsstand und Nachweisaufnahme
+
+Änderungen, die ausschließlich `.governance/architecture/operation-evidence.json`
+oder `deployment/staging/**` betreffen, starten auf `main` keine neuen
+Anwendungs-, Governance-, Architektur- oder L1-Messläufe. Diese Dateien
+dokumentieren einen bereits gebauten und geprüften Anwendungsstand; ihr späterer
+Merge darf deshalb keinen neuen Software-Commit als geprüft oder deployt
+ausweisen. Pull Requests werden weiterhin durch die regulären Pflichtprüfungen
+validiert. Sobald derselbe Commit zusätzlich Anwendungs-, Build- oder andere
+Governance-Dateien ändert, laufen die Mainline-Prüfungen unverändert.

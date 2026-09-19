@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - ".governance/architecture/operation-evidence.json"
+      - "deployment/staging/**"
   workflow_dispatch:
 
 permissions:
