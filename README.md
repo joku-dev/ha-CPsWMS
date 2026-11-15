@@ -407,3 +407,11 @@ FastAPI-Doku:
 See [Refresh governance evidence](docs/governance-evidence-refresh.md) for the
 11 September 2026 maintenance refresh and the distinction between new mainline
 evidence, manual diagnostics and centrally accepted results.
+
+## Portable governance pilot
+
+The additional [portable pipeline-l1 report-only pilot](docs/portable-pipeline-l1.md)
+produces artifact-bound dependency evidence for independent Mac/VM verification.
+It evaluates five mapped controls; the existing governance integrations retain
+their current modes and baselines. Native collection and VM shadow acceptance
+have separate prerequisites described in the pilot guide.
