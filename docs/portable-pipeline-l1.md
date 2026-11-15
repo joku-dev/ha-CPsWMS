@@ -2,7 +2,8 @@
 
 The separate `Portable Pipeline L1 (report-only)` workflow prepares fresh evidence
 for the portable governance runtime. It runs on pull requests, pushes to `main`
-and manual dispatch. Its runtime is pinned to governance commit
+and manual dispatch. PR diagnostics explicitly check out the PR source head;
+main/manual runs check out their native run SHA. Its runtime is pinned to governance commit
 `adc4643bb7a5c962e4efb1525298ad9e652c73d2`, the implementation installed on both
 the Mac and Ubuntu VM when this pilot was prepared. The released baseline remains
 `l1-baseline-v1.1.3`. This new job is not added to required branch checks.
